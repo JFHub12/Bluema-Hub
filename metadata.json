@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix VERFIED - Luxury Shopping",
+  "description": "VERFIED official e-commerce platform featuring luxury clothing, ambient diffusers, curated accessories, and genuine Apple iPhones with seamless checkout and direct customer support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

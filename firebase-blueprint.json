@@ -1,0 +1,227 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile details for authenticated VERFIED users",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique Firebase Authentication User ID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of user avatar or profile icon",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Server timestamp of creation",
+          "maxLength": 50
+        }
+      },
+      "required": ["uid", "name", "createdAt"]
+    },
+    "UserPrivateData": {
+      "title": "UserPrivateData",
+      "description": "Private contact details and profile metadata isolated to user owner",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase user identifier matching auth.uid",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "Verified email address",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer contact telephone number",
+          "maxLength": 30
+        },
+        "role": {
+          "type": "string",
+          "description": "User access role in platform",
+          "enum": ["customer", "admin"],
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 50
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order purchase record in VERFIED store",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique order identifier",
+          "maxLength": 64
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of purchaser",
+          "maxLength": 128
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "Email address of customer",
+          "maxLength": 150
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Full shipping name",
+          "maxLength": 120
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Contact telephone number",
+          "maxLength": 30
+        },
+        "shippingAddress": {
+          "type": "string",
+          "description": "Delivery address destination",
+          "maxLength": 500
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Order subtotal amount in GHS"
+        },
+        "total": {
+          "type": "number",
+          "description": "Order total charge in GHS"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Selected checkout method",
+          "maxLength": 50
+        },
+        "paymentReference": {
+          "type": "string",
+          "description": "Unique transaction confirmation identifier",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "Fulfillment status of order",
+          "enum": ["pending", "verified", "processing", "shipped", "delivered", "cancelled"],
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the order was submitted",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "userEmail", "customerName", "total", "status", "createdAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Inquiry or concierge assistance ticket",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ticket identifier",
+          "maxLength": 64
+        },
+        "userId": {
+          "type": "string",
+          "description": "Optional authenticated submitter UID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Sender full name",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Reply-to email address",
+          "maxLength": 150
+        },
+        "category": {
+          "type": "string",
+          "description": "Topic of inquiry",
+          "maxLength": 50
+        },
+        "subject": {
+          "type": "string",
+          "description": "Brief description",
+          "maxLength": 200
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed question or issue statement",
+          "maxLength": 3000
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of support ticket",
+          "enum": ["open", "in_progress", "resolved", "closed"],
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Submission timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "name", "email", "category", "subject", "message", "status", "createdAt"]
+    },
+    "ConnectionTest": {
+      "title": "ConnectionTest",
+      "description": "Health check document for testing Firestore server connectivity",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Status of test connection",
+          "maxLength": 50
+        }
+      },
+      "required": ["status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/public/profile": {
+      "schema": "UserProfile",
+      "description": "Public profile document for a user"
+    },
+    "/users/{userId}/private/info": {
+      "schema": "UserPrivateData",
+      "description": "Private sensitive PII information accessible strictly to the user owner"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders collection"
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Customer support requests submitted to concierge desk"
+    },
+    "/test/{testId}": {
+      "schema": "ConnectionTest",
+      "description": "Smoke test collection for verifying server database connection"
+    }
+  }
+}

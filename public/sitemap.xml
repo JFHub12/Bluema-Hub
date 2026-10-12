@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- 1. Primary Landing & Full Catalog -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/jsg7ebov/image/upload/v1791658927/download_8.jpg</image:loc>
+      <image:title>BLUEMA HUB Luxury Brand Portal</image:title>
+    </image:image>
+  </url>
+
+  <!-- 2. Sitelinks - Luxury Collections -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?category=cloth</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Cloth and Apparel Collection</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?category=diffuser</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Ultrasonic and Ambient Aroma Diffusers</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?category=accessories</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Curated Timepieces and Luxury Accessories</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?category=iphones</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Genuine Apple iPhones and Tech with Official Warranty</image:title>
+    </image:image>
+  </url>
+
+  <!-- 3. Sitelinks - Services & Member Portals -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?action=concierge</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?action=orders</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?action=auth</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/terms</loc>
+    <lastmod>2026-10-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/privacy</loc>
+    <lastmod>2026-10-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 4. Deep Product Sitelinks - Cloth & Apparel -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=c1</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Signature Heavyweight Hoodie 500 GSM</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=c2</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Architectural Trench Overcoat</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=c3</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Minimalist Relaxed Mercerized Tee</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=c4</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Tailored Pleated Wool-Blend Trousers</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=c5</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Structured Raw Denim Chore Jacket</image:title>
+    </image:image>
+  </url>
+
+  <!-- 5. Deep Product Sitelinks - Diffusers & Scents -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=d1</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Ceramic Flame Mist Diffuser</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=d2</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Nordic Cast Stone Smart Aroma Diffuser</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=d3</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1602928321679-560bb453f190?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Artisan Amber Glass Reed Diffuser Set</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=d4</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Waterless Cold-Air Nebulizing Diffuser</image:title>
+    </image:image>
+  </url>
+
+  <!-- 6. Deep Product Sitelinks - Accessories & Timepieces -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=a1</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>BLUEMA HUB Chrono Sapphire Watch 41mm</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=a2</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Italian Full-Grain Leather Card Wallet</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=a3</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Titanium D-Frame Polarized Sunglasses</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=a4</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>18K Gold Plated Cuban Link Chain 6mm</image:title>
+    </image:image>
+  </url>
+
+  <!-- 7. Deep Product Sitelinks - Apple iPhones & Tech -->
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=p1</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Apple iPhone 16 Pro Max Sealed with Official Warranty</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=p2</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Apple iPhone 16 Pro</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=p3</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Apple iPhone 16 Dynamic Island</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/?product=p4</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1565849904461-04a58ad377e0?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Apple iPhone 15 Pro Titanium</image:title>
+    </image:image>
+  </url>
+</urlset>

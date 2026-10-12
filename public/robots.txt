@@ -1,0 +1,101 @@
+# ==============================================================================
+# BLUEMA HUB (Official E-Commerce Platform) - robots.txt
+# Standard Search Engine Directives & AI Crawler Indexing Protocol
+# ==============================================================================
+
+# 1. Standard Web Crawlers (Google, Bing, Yahoo, DuckDuckGo)
+User-agent: *
+Allow: /
+Allow: /sitemap.xml
+Allow: /manifest.json
+Allow: /api/products
+Allow: /api/payments/status
+Allow: /terms
+Allow: /privacy
+Allow: /terms.html
+Allow: /privacy.html
+Disallow: /api/auth/
+Disallow: /api/orders
+Disallow: /users/
+Disallow: /*?admin=*
+
+# 2. OpenAI Crawlers (ChatGPT Search, GPTBot, RAG)
+User-agent: GPTBot
+Allow: /
+Allow: /sitemap.xml
+Allow: /api/products
+Disallow: /api/auth/
+Disallow: /api/orders
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /sitemap.xml
+
+# 3. Google AI & Gemini Crawlers (Search Grounding & Indexing)
+User-agent: Google-Extended
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: GoogleOther
+Allow: /
+Allow: /sitemap.xml
+
+# 4. Anthropic Claude Crawlers
+User-agent: ClaudeBot
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: anthropic-ai
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: Claude-Web
+Allow: /
+Allow: /sitemap.xml
+
+# 5. Perplexity AI Engine
+User-agent: PerplexityBot
+Allow: /
+Allow: /sitemap.xml
+
+# 6. Apple Intelligence & Search (Applebot)
+User-agent: Applebot
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: Applebot-Extended
+Allow: /
+Allow: /sitemap.xml
+
+# 7. Meta AI & Research Crawlers
+User-agent: Meta-ExternalAgent
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: FacebookBot
+Allow: /
+Allow: /sitemap.xml
+
+# 8. Additional Enterprise & Open AI Crawlers
+User-agent: cohere-ai
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: CCBot
+Allow: /
+Allow: /sitemap.xml
+
+User-agent: Bytespider
+Allow: /
+Allow: /sitemap.xml
+
+# Crawl-delay for optimal server load balancing
+Crawl-delay: 1
+
+# XML Sitemap Location
+Sitemap: https://ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app/sitemap.xml
+Host: ais-dev-ydw7ig2snqifewwwnx7mf3-945991044130.europe-west2.run.app

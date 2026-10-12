@@ -1,0 +1,181 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (Default Deny Catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Security Helper Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'jessefiagbe@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 3. Entity Validation Helpers (Anti-Update-Gap)
+    function isValidUserProfile(data, uid) {
+      return data.keys().hasAll(['uid', 'name', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'photoURL', 'createdAt']) &&
+        data.uid is string && data.uid == uid && data.uid.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidUserPrivateData(data, uid) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'phone', 'role', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid == uid && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 150 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+        (!('role' in data) || (data.role in ['customer', 'admin'])) &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'userId', 'userEmail', 'customerName', 'total', 'status', 'createdAt']) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'userEmail', 'customerName', 'customerPhone', 
+          'shippingAddress', 'subtotal', 'total', 'paymentMethod', 
+          'paymentReference', 'status', 'createdAt'
+        ]) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+        data.userEmail is string && data.userEmail.size() > 0 && data.userEmail.size() <= 150 &&
+        data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 120 &&
+        (!('customerPhone' in data) || (data.customerPhone is string && data.customerPhone.size() <= 30)) &&
+        (!('shippingAddress' in data) || (data.shippingAddress is string && data.shippingAddress.size() <= 500)) &&
+        (!('subtotal' in data) || (data.subtotal is number && data.subtotal >= 0)) &&
+        data.total is number && data.total >= 0 &&
+        (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 50)) &&
+        (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 100)) &&
+        data.status in ['pending', 'verified', 'processing', 'shipped', 'delivered', 'cancelled'] &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidSupportTicket(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'category', 'subject', 'message', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'email', 'category', 'subject', 'message', 'status', 'createdAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 150 &&
+        data.category is string && data.category.size() <= 50 &&
+        data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200 &&
+        data.message is string && data.message.size() > 0 && data.message.size() <= 3000 &&
+        data.status in ['open', 'in_progress', 'resolved', 'closed'] &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // 4. Match Blocks
+
+    // Smoke Test Connection document
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+
+    // Admin collection (lookup for admin privileges)
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // User Public Profile
+    match /users/{userId}/public/profile {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId) && 
+        isValidId(userId) && 
+        isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && 
+        isValidId(userId) && 
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoURL']);
+      allow delete: if isAdmin();
+    }
+
+    // User Private PII Data (Strict Isolation)
+    match /users/{userId}/private/info {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && 
+        isValidId(userId) && 
+        isValidUserPrivateData(incoming(), userId) &&
+        (!('role' in incoming()) || incoming().role == 'customer' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && 
+        isValidId(userId) && 
+        isValidUserPrivateData(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        (isAdmin() || incoming().diff(existing()).affectedKeys().hasOnly(['phone', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && 
+        isValidId(orderId) && 
+        isValidOrder(incoming()) && 
+        incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          isOwner(existing().userId) &&
+          isValidOrder(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          existing().status != 'delivered' && 
+          existing().status != 'cancelled' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['customerPhone', 'shippingAddress'])
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Support Tickets Collection
+    match /support_tickets/{ticketId} {
+      allow get: if isSignedIn() && (
+        isAdmin() || 
+        (('userId' in resource.data) && resource.data.userId == request.auth.uid)
+      );
+      allow list: if isSignedIn() && (
+        isAdmin() ||
+        (('userId' in resource.data) && resource.data.userId == request.auth.uid)
+      );
+      allow create: if isValidId(ticketId) && 
+        isValidSupportTicket(incoming()) &&
+        (!('userId' in incoming()) || (isSignedIn() && incoming().userId == request.auth.uid));
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
