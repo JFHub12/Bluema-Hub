@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, User as UserIcon, Phone, Search, Menu, X, BookOpen, Home, MessageSquare, Settings } from 'lucide-react';
+import { ShoppingBag, User as UserIcon, Phone, Search, Menu, X, BookOpen, Home, MessageSquare, Settings, Sun, Moon } from 'lucide-react';
 import { User, SUPPORT_PHONE, SUPPORT_PHONE_CALL, SUPPORT_WHATSAPP, BRAND_NAME } from '../services/api';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -15,6 +15,7 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,7 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   searchQuery,
   onSearchChange,
-  theme = 'dark'
+  theme = 'dark',
+  onToggleTheme
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -194,6 +196,20 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
+            {/* Light / Dark Mode Toggle Button in Header (Option 2: Desktop & Tablet persistent, Mobile in drawer) */}
+            {onToggleTheme && (
+              <button
+                onClick={onToggleTheme}
+                className={`hidden sm:inline-flex items-center justify-center p-2.5 rounded-xl transition-colors cursor-pointer ${
+                  isDark ? 'text-amber-400 hover:bg-slate-900' : 'text-indigo-600 hover:bg-slate-100'
+                }`}
+                aria-label="Toggle Theme"
+                title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+            )}
+
             {/* PWA Install Button */}
             <div className="hidden sm:block">
               <PWAInstallButton variant="header" />
@@ -337,6 +353,21 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Settings className="w-4 h-4 text-indigo-400" />
                   <span>Settings & Admin</span>
+                </button>
+              )}
+
+              {onToggleTheme && (
+                <button
+                  onClick={() => {
+                    onToggleTheme();
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`p-3 rounded-xl text-left flex items-center gap-2 col-span-2 ${
+                    isDark ? 'bg-slate-900 text-amber-300' : 'bg-slate-100 text-indigo-700'
+                  }`}
+                >
+                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  <span className="font-semibold">Switch to {isDark ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
               )}
             </div>

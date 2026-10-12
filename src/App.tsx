@@ -39,9 +39,7 @@ import {
   UserPlus,
   ShoppingBag,
   Smartphone,
-  QrCode,
-  Sun,
-  Moon
+  QrCode
 } from 'lucide-react';
 
 export default function App() {
@@ -429,6 +427,7 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* PAGE 1: Welcoming Message Page */}
@@ -691,29 +690,6 @@ export default function App() {
           <span>Admin Console</span>
         </button>
       )}
-
-      {/* Mode Toggle Button (Existing element in layout) */}
-      <button
-        id="mode-toggle"
-        data-testid="mode-toggle"
-        type="button"
-        onClick={toggleTheme}
-        className={`fixed bottom-6 right-6 z-50 p-3.5 rounded-2xl shadow-2xl backdrop-blur-xl transition-all cursor-pointer flex items-center justify-center group active:scale-95 border mode-toggle theme-toggle ${
-          theme === 'dark'
-            ? 'bg-slate-900/90 hover:bg-slate-800 text-white border-slate-700/80 shadow-black/60 ring-1 ring-white/10'
-            : 'bg-white/95 hover:bg-slate-100 text-slate-900 border-slate-300/80 shadow-slate-900/20 ring-1 ring-black/5'
-        }`}
-        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-        aria-label="Toggle Theme"
-        aria-checked={theme === 'dark'}
-        role="switch"
-      >
-        {theme === 'dark' ? (
-          <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
-        ) : (
-          <Moon className="w-5 h-5 text-indigo-600 group-hover:-rotate-12 transition-transform duration-300" />
-        )}
-      </button>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // BLUEMA HUB Flagship Progressive Web App Service Worker
-// Version: bluema-hub-pwa-v3.0.0
+// Version: bluema-hub-pwa-v3.1.0
 
-const CACHE_VERSION = 'bluema-hub-pwa-v3.0.0';
+const CACHE_VERSION = 'bluema-hub-pwa-v3.1.0';
 const STATIC_CACHE_NAME = `static-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `data-${CACHE_VERSION}`;
 const IMAGE_CACHE_NAME = `images-${CACHE_VERSION}`;
@@ -26,7 +26,6 @@ const PRECACHE_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME).then((cache) => {
-      // Use individual cache additions with fault tolerance so single asset failure does not break install
       return Promise.allSettled(
         PRECACHE_ASSETS.map((asset) =>
           cache.add(asset).catch((err) => {
@@ -79,12 +78,32 @@ function isApiRequest(request) {
   return request.url.includes('/api/');
 }
 
+// Check if request is a Vite development or dynamic module
+function isDevOrViteRequest(request) {
+  const url = request.url;
+  return (
+    url.includes('/@vite') ||
+    url.includes('/@fs/') ||
+    url.includes('/@id/') ||
+    url.includes('/src/') ||
+    url.includes('?v=') ||
+    url.includes('?t=') ||
+    url.includes('hot-update')
+  );
+}
+
 // 3. FETCH STRATEGIES
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Only handle HTTP/HTTPS GET requests; let mutations (POST/PUT/DELETE) bypass SW
+  // Only handle HTTP/HTTPS GET requests; let mutations bypass SW
   if (request.method !== 'GET' || !request.url.startsWith('http')) {
+    return;
+  }
+
+  // Vite development modules must always go straight to network to ensure live preview
+  if (isDevOrViteRequest(request)) {
+    event.respondWith(fetch(request));
     return;
   }
 
@@ -135,7 +154,6 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         }).catch(() => {
-          // Fallback if image unavailable
           if (isImageRequest(request)) {
             return caches.match('/icon.svg');
           }
@@ -145,7 +163,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy C: HTML Navigation & App Shell -> Network First with Cache Fallback (to '/' or cached HTML)
+  // Strategy C: HTML Navigation & App Shell -> Network First with Cache Fallback
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -167,19 +185,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy D: Static Bundles (JS/CSS) -> Stale While Revalidate
+  // Strategy D: Static Bundles -> Network First for live accuracy, fallback to cache
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
+    fetch(request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const clone = networkResponse.clone();
           caches.open(STATIC_CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return networkResponse;
-      }).catch(() => cachedResponse);
-
-      return cachedResponse || fetchPromise;
-    })
+      })
+      .catch(() => {
+        return caches.match(request);
+      })
   );
 });
 
