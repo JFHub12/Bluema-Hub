@@ -1,7 +1,7 @@
 // BLUEMA HUB Flagship Progressive Web App Service Worker
-// Version: bluema-hub-pwa-v3.1.0
+// Version: bluema-hub-pwa-v3.2.0
 
-const CACHE_VERSION = 'bluema-hub-pwa-v3.1.0';
+const CACHE_VERSION = 'bluema-hub-pwa-v3.2.0';
 const STATIC_CACHE_NAME = `static-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `data-${CACHE_VERSION}`;
 const IMAGE_CACHE_NAME = `images-${CACHE_VERSION}`;
@@ -16,6 +16,8 @@ const PRECACHE_ASSETS = [
   '/pwa-192x192.png',
   '/pwa-512x512.png',
   '/pwa-maskable-512x512.png',
+  '/pwa-screenshot-desktop.jpg',
+  '/pwa-screenshot-mobile.jpg',
   '/apple-touch-icon.png',
   '/icon.svg',
   '/sitemap.xml',

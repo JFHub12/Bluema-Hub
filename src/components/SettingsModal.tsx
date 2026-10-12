@@ -2,6 +2,7 @@ import React from 'react';
 import { Settings, Lock, ShieldCheck, Phone, Coins, Sparkles, X, ArrowRight, Sun, Moon } from 'lucide-react';
 import { BRAND_CONFIG } from '../assets/branding';
 import { SUPPORT_PHONE } from '../services/api';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -97,8 +98,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* General Preferences Section */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
-              General Preferences
+              General Preferences & App Controls
             </h4>
+
+            {/* PWA Application Status & Install Card */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-black border border-slate-700 flex items-center justify-center text-white text-xs font-black shadow-inner shrink-0">
+                  <span>B</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h5 className="text-xs font-bold text-white">Progressive Web App (PWA)</h5>
+                    <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[9px] font-bold border border-blue-500/30">
+                      v3.2.0
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">Offline catalog precached • Dedicated window support</p>
+                </div>
+              </div>
+              <div className="shrink-0 ml-2">
+                <PWAInstallButton variant="settings" />
+              </div>
+            </div>
 
             {/* Theme Toggle */}
             <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">

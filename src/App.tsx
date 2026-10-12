@@ -18,6 +18,7 @@ import { PrivacyBanner } from './components/PrivacyBanner';
 import { Footer } from './components/Footer';
 import { SettingsModal } from './components/SettingsModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { CATEGORIES, Product } from './data/products';
 import { CartAnimate } from './components/CartAnimate';
 import { 
@@ -678,6 +679,9 @@ export default function App() {
 
       {/* Offline Connectivity Status Toast */}
       <OfflineIndicator />
+
+      {/* Progressive Web App Install Banner (Automatic & Non-Intrusive) */}
+      <PWAInstallBanner />
 
       {/* Admin Button trigger */}
       {isAdminEnabled && (

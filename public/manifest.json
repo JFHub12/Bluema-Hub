@@ -6,10 +6,12 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "background_color": "#0a0a0c",
   "theme_color": "#0a0a0c",
   "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "categories": ["shopping", "lifestyle", "business"],
   "icons": [
     {
@@ -37,6 +39,22 @@
       "purpose": "any"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/pwa-screenshot-desktop.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "BLUEMA HUB Storefront on Desktop"
+    },
+    {
+      "src": "/pwa-screenshot-mobile.jpg",
+      "sizes": "750x1334",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "BLUEMA HUB Mobile Experience"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Shop Collection",
@@ -46,10 +64,17 @@
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Concierge Support",
+      "name": "VIP Concierge",
       "short_name": "Concierge",
       "description": "Direct VIP concierge line",
       "url": "/?action=support",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Shopping Bag",
+      "short_name": "Cart",
+      "description": "View items in your bag",
+      "url": "/?action=cart",
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
   ]
