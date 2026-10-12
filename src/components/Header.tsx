@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, User as UserIcon, Phone, Search, Menu, X, BookOpen, Home, MessageSquare } from 'lucide-react';
+import { ShoppingBag, User as UserIcon, Phone, Search, Menu, X, BookOpen, Home, MessageSquare, Settings } from 'lucide-react';
 import { User, SUPPORT_PHONE, SUPPORT_PHONE_CALL, SUPPORT_WHATSAPP, BRAND_NAME } from '../services/api';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -8,6 +8,7 @@ interface HeaderProps {
   onOpenAuth: (initialTab?: 'login' | 'register' | 'profile') => void;
   onOpenSupport: () => void;
   onOpenCart?: () => void;
+  onOpenSettings?: () => void;
   cartCount?: number;
   activePage: 'welcome' | 'about' | 'shop' | 'cart';
   onNavigate: (page: 'welcome' | 'about' | 'shop' | 'cart', category?: 'all' | 'cloth' | 'diffuser' | 'accessories' | 'iphones') => void;
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onOpenSupport,
   onOpenCart,
+  onOpenSettings,
   cartCount = 0,
   activePage,
   onNavigate,
@@ -178,6 +180,20 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
+            {/* Settings Button */}
+            {onOpenSettings && (
+              <button
+                onClick={onOpenSettings}
+                className={`p-2.5 rounded-xl transition-colors cursor-pointer ${
+                  isDark ? 'text-slate-300 hover:text-white hover:bg-slate-900' : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                }`}
+                aria-label="Website Settings & Admin"
+                title="Website Settings & Admin Console"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+
             {/* PWA Install Button */}
             <div className="hidden sm:block">
               <PWAInstallButton variant="header" />
@@ -308,6 +324,21 @@ export const Header: React.FC<HeaderProps> = ({
                 <Phone className="w-4 h-4 text-emerald-500" />
                 <span>Contact</span>
               </button>
+
+              {onOpenSettings && (
+                <button
+                  onClick={() => {
+                    onOpenSettings();
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`p-3 rounded-xl text-left flex items-center gap-2 ${
+                    isDark ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-800'
+                  }`}
+                >
+                  <Settings className="w-4 h-4 text-indigo-400" />
+                  <span>Settings & Admin</span>
+                </button>
+              )}
             </div>
 
             <div className={`pt-2 border-t flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>

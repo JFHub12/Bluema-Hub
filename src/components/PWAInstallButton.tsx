@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Smartphone, Share2, Check, X, Sparkles } from 'lucide-react';
+import { Smartphone, Share2, Check, X, Sparkles } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface PWAInstallButtonProps {
@@ -39,7 +39,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           className={`w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-950 text-white font-semibold text-xs transition-all hover:bg-slate-900 cursor-pointer shadow-sm ${className}`}
         >
           <div className="flex items-center gap-2.5">
-            <Download className="w-4 h-4 text-white" />
+            <img src="/icon.svg" alt="BLUEMA Icon" className="w-4 h-4 rounded object-contain" />
             <span>Install BLUEMA HUB App</span>
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-white/10 px-2 py-0.5 rounded-full">
@@ -56,7 +56,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         title="Install BLUEMA HUB to home screen"
         className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-950 transition-all cursor-pointer shadow-sm active:scale-95 ${className}`}
       >
-        <Download className="w-3.5 h-3.5" />
+        <img src="/icon.svg" alt="BLUEMA Icon" className="w-4 h-4 rounded object-contain" />
         <span className="hidden sm:inline">Install App</span>
         <span className="sm:hidden">App</span>
       </button>
@@ -73,7 +73,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-xs transition-all cursor-pointer ${className}`}
           >
             <div className="flex items-center gap-2.5">
-              <Smartphone className="w-4 h-4 text-slate-700" />
+              <img src="/icon.svg" alt="BLUEMA Icon" className="w-4 h-4 rounded object-contain" />
               <span>Install on iPhone / iPad</span>
             </div>
             <span className="text-[10px] font-bold text-slate-500">iOS</span>
@@ -84,7 +84,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             title="Install on iPhone / iPad Safari"
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 hover:border-slate-400 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer ${className}`}
           >
-            <Smartphone className="w-3.5 h-3.5 text-slate-600" />
+            <img src="/icon.svg" alt="BLUEMA Icon" className="w-4 h-4 rounded object-contain" />
             <span className="hidden sm:inline">Install on iOS</span>
             <span className="sm:hidden">iOS</span>
           </button>
