@@ -49,8 +49,7 @@ async function startPythonBackend() {
     env: { 
       ...process.env, 
       PYTHON_PORT: String(PYTHON_PORT),
-      PAYMENT_API_KEY: process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6',
-      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'verify2026'
+      PAYMENT_API_KEY: process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6'
     },
     stdio: 'inherit'
   });
