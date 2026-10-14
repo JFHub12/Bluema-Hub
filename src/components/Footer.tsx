@@ -7,7 +7,6 @@ interface FooterProps {
   onOpenSupport: () => void;
   onOpenAuth: () => void;
   onOpenPrivacy?: () => void;
-  onOpenSettings?: () => void;
   theme?: 'dark' | 'light';
 }
 
@@ -16,7 +15,6 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenSupport,
   onOpenAuth,
   onOpenPrivacy,
-  onOpenSettings,
   theme = 'light'
 }) => {
   const isDark = theme === 'dark';
@@ -164,16 +162,6 @@ export const Footer: React.FC<FooterProps> = ({
             }`}>
               Customer Account
             </button>
-            {onOpenSettings && (
-              <>
-                <span>·</span>
-                <button onClick={onOpenSettings} className={`underline cursor-pointer ${
-                  isDark ? 'hover:text-white' : 'hover:text-slate-950'
-                }`}>
-                  Settings & Admin
-                </button>
-              </>
-            )}
           </div>
         </div>
 

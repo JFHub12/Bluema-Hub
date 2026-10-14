@@ -16,7 +16,6 @@ import { AdminPasswordModal } from './components/AdminPasswordModal';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
 import { Footer } from './components/Footer';
-import { SettingsModal } from './components/SettingsModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { CATEGORIES, Product } from './data/products';
@@ -62,7 +61,6 @@ export default function App() {
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminPasswordModalOpen, setIsAdminPasswordModalOpen] = useState(false);
   const [isAdminEnabled, setIsAdminEnabled] = useState(false);
@@ -421,7 +419,6 @@ export default function App() {
         onOpenAuth={(tab) => openAuthWithTab(tab)}
         onOpenSupport={() => setIsSupportOpen(true)}
         onOpenCart={() => handleNavigate('cart')}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         cartCount={totalCartCount}
         activePage={activePage}
         onNavigate={handleNavigate}
@@ -664,17 +661,7 @@ export default function App() {
         onOpenSupport={() => setIsSupportOpen(true)}
         onOpenAuth={() => openAuthWithTab(currentUser ? 'profile' : 'register')}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         theme={theme}
-      />
-
-      {/* Website Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onOpenAdmin={() => setIsAdminPasswordModalOpen(true)}
-        theme={theme}
-        onToggleTheme={toggleTheme}
       />
 
       {/* Offline Connectivity Status Toast */}
