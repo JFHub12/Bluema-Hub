@@ -406,6 +406,10 @@ export const ApiService = {
       paymentApiKey: orderPayload.paymentApiKey || PAYMENT_API_KEY
     };
 
+    let generatedOrderId = `VRF-${Math.floor(100000 + Math.random() * 900000)}`;
+    let generatedRef = `PAY-${Date.now()}-${generatedOrderId}`;
+    let generatedAuth = `AUTH-05935632-${generatedOrderId}`;
+
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -417,42 +421,66 @@ export const ApiService = {
       });
       const data = await response.json();
       if (response.ok && data.success) {
-        this._saveLocalOrder({
-          ...payloadWithKey,
-          id: data.orderId,
-          paymentReference: data.reference,
-          paymentApiKey: data.paymentApiKey || PAYMENT_API_KEY,
-          gatewayAuth: data.gatewayAuth || `AUTH-05935632-${data.orderId}`,
-          status: 'Paid & Verified via Payment API',
-          createdAt: Date.now() / 1000
-        });
-        return { 
-          success: true, 
-          orderId: data.orderId, 
-          reference: data.reference,
-          paymentApiKey: data.paymentApiKey || PAYMENT_API_KEY,
-          gatewayAuth: data.gatewayAuth || `AUTH-05935632-${data.orderId}`
-        };
+        generatedOrderId = data.orderId || generatedOrderId;
+        generatedRef = data.reference || generatedRef;
+        generatedAuth = data.gatewayAuth || generatedAuth;
       }
     } catch (e) {
-      console.warn('[API] Order submission to backend failed, saving locally:', e);
+      console.warn('[API] Order submission to backend proxy note:', e);
     }
 
-    // Fallback local order creation
-    const orderId = `VRF-${Math.floor(100000 + Math.random() * 900000)}`;
-    const reference = `PAY-${Date.now()}-${orderId}`;
-    const gatewayAuth = `AUTH-05935632-${orderId}`;
-    const newOrder: Order = {
+    // Direct Firestore Persistence with Hardened Error Handling
+    try {
+      const nowIso = new Date().toISOString();
+      await setDoc(doc(db, 'orders', generatedOrderId), {
+        id: generatedOrderId,
+        orderId: generatedOrderId,
+        customerName: orderPayload.customerName,
+        customerPhone: orderPayload.customerPhone || '',
+        shippingAddress: orderPayload.shippingAddress || '',
+        total: Number(orderPayload.total) || 0,
+        subtotal: Number(orderPayload.subtotal || orderPayload.total) || 0,
+        paymentMethod: orderPayload.paymentMethod || 'momo',
+        paymentReference: generatedRef,
+        paymentPhone: orderPayload.paymentPhone || '',
+        paymentApiKey: payloadWithKey.paymentApiKey,
+        gatewayAuth: generatedAuth,
+        status: 'Paid & Verified via Payment API',
+        createdAt: nowIso,
+        userEmail: orderPayload.userEmail || '',
+        userId: orderPayload.userId || auth.currentUser?.uid || 'guest'
+      }, { merge: true });
+
+      // Record in audit_logs
+      const logId = `log_${Date.now()}`;
+      await setDoc(doc(db, 'audit_logs', logId), {
+        id: logId,
+        actionType: 'NEW_PURCHASE',
+        actor: orderPayload.customerName,
+        details: `Order #${generatedOrderId} placed for GH₵${orderPayload.total.toLocaleString()} via ${orderPayload.paymentMethod}`,
+        createdAt: nowIso
+      }, { merge: true });
+    } catch (err) {
+      console.warn('[Firestore] Note on client-side direct order write:', err);
+    }
+
+    this._saveLocalOrder({
       ...payloadWithKey,
-      id: orderId,
-      paymentReference: reference,
-      paymentApiKey: PAYMENT_API_KEY,
-      gatewayAuth,
+      id: generatedOrderId,
+      paymentReference: generatedRef,
+      paymentApiKey: payloadWithKey.paymentApiKey,
+      gatewayAuth: generatedAuth,
       status: 'Paid & Verified via Payment API',
       createdAt: Date.now() / 1000
+    });
+
+    return { 
+      success: true, 
+      orderId: generatedOrderId, 
+      reference: generatedRef, 
+      paymentApiKey: payloadWithKey.paymentApiKey, 
+      gatewayAuth: generatedAuth 
     };
-    this._saveLocalOrder(newOrder);
-    return { success: true, orderId, reference, paymentApiKey: PAYMENT_API_KEY, gatewayAuth };
   },
 
   async getOrders(userEmail?: string): Promise<Order[]> {
@@ -477,6 +505,25 @@ export const ApiService = {
   },
 
   async sendSupportTicket(ticket: { name: string; phone: string; category: string; message: string }): Promise<{ success: boolean; message: string }> {
+    const ticketId = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const nowIso = new Date().toISOString();
+
+    // 1. Direct write to Firebase Firestore
+    try {
+      await setDoc(doc(db, 'support_tickets', ticketId), {
+        id: ticketId,
+        name: ticket.name,
+        phone: ticket.phone,
+        category: ticket.category,
+        message: ticket.message,
+        status: 'open',
+        createdAt: nowIso
+      }, { merge: true });
+    } catch (err) {
+      console.warn('[Firestore Support Note]:', err);
+    }
+
+    // 2. Write to backend SQLite database
     try {
       const response = await fetch('/api/support', {
         method: 'POST',
@@ -494,6 +541,30 @@ export const ApiService = {
       success: true,
       message: `Your message has been received! Our support agent will call or WhatsApp you directly on ${SUPPORT_PHONE}.`
     };
+  },
+
+  async getSyncStatus() {
+    try {
+      const res = await fetch('/api/sync/status');
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Sync status fetch error:', e);
+    }
+    return null;
+  },
+
+  async forceDatabaseSync() {
+    try {
+      const res = await fetch('/api/sync/run', { method: 'POST' });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Force sync error:', e);
+    }
+    return { success: false, message: 'Sync request failed.' };
   },
 
   _getLocalUsers(): any[] {

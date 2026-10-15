@@ -67,6 +67,65 @@
       },
       "required": ["uid", "email", "createdAt"]
     },
+    "Product": {
+      "title": "Product",
+      "description": "Catalog product stored in Firebase and database",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique product SKU or identifier",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Product title",
+          "maxLength": 150
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed product description",
+          "maxLength": 3000
+        },
+        "price": {
+          "type": "number",
+          "description": "Selling price in GHS"
+        },
+        "originalPrice": {
+          "type": "number",
+          "description": "Strikethrough list price in GHS"
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category",
+          "maxLength": 60
+        },
+        "image": {
+          "type": "string",
+          "description": "Primary product image URL",
+          "maxLength": 500
+        },
+        "rating": {
+          "type": "number",
+          "description": "Customer review rating"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Promotional tag label",
+          "maxLength": 60
+        },
+        "inStock": {
+          "type": "boolean",
+          "description": "Availability status"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of inventory record update",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "name", "price", "category", "image"]
+    },
     "Order": {
       "title": "Order",
       "description": "Customer order purchase record in VERFIED store",
@@ -79,7 +138,7 @@
         },
         "userId": {
           "type": "string",
-          "description": "UID of purchaser",
+          "description": "UID of purchaser or guest ID",
           "maxLength": 128
         },
         "userEmail": {
@@ -120,11 +179,26 @@
           "description": "Unique transaction confirmation identifier",
           "maxLength": 100
         },
+        "paymentPhone": {
+          "type": "string",
+          "description": "MoMo or contact phone used for transaction",
+          "maxLength": 30
+        },
+        "paymentApiKey": {
+          "type": "string",
+          "description": "Payment API key used for verification",
+          "maxLength": 100
+        },
+        "gatewayAuth": {
+          "type": "string",
+          "description": "Gateway authorization reference code",
+          "maxLength": 100
+        },
         "status": {
           "type": "string",
           "description": "Fulfillment status of order",
           "enum": ["pending", "verified", "processing", "shipped", "delivered", "cancelled"],
-          "maxLength": 30
+          "maxLength": 50
         },
         "createdAt": {
           "type": "string",
@@ -132,7 +206,7 @@
           "maxLength": 50
         }
       },
-      "required": ["id", "userId", "userEmail", "customerName", "total", "status", "createdAt"]
+      "required": ["id", "customerName", "total", "status", "createdAt"]
     },
     "SupportTicket": {
       "title": "SupportTicket",
@@ -153,6 +227,11 @@
           "type": "string",
           "description": "Sender full name",
           "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number",
+          "maxLength": 30
         },
         "email": {
           "type": "string",
@@ -186,7 +265,40 @@
           "maxLength": 50
         }
       },
-      "required": ["id", "name", "email", "category", "subject", "message", "status", "createdAt"]
+      "required": ["id", "name", "category", "message", "status", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Real-time audit log of purchases and admin operations",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique audit log identifier",
+          "maxLength": 64
+        },
+        "actionType": {
+          "type": "string",
+          "description": "Categorized action key",
+          "maxLength": 60
+        },
+        "actor": {
+          "type": "string",
+          "description": "Person or system that triggered action",
+          "maxLength": 150
+        },
+        "details": {
+          "type": "string",
+          "description": "Summary and contextual details",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of action",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "actionType", "actor", "createdAt"]
     },
     "ConnectionTest": {
       "title": "ConnectionTest",
@@ -196,6 +308,11 @@
         "status": {
           "type": "string",
           "description": "Status of test connection",
+          "maxLength": 50
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp of smoke test",
           "maxLength": 50
         }
       },
@@ -211,6 +328,10 @@
       "schema": "UserPrivateData",
       "description": "Private sensitive PII information accessible strictly to the user owner"
     },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Catalog product items collection"
+    },
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Customer orders collection"
@@ -218,6 +339,10 @@
     "/support_tickets/{ticketId}": {
       "schema": "SupportTicket",
       "description": "Customer support requests submitted to concierge desk"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Activity audit records for commerce and admin actions"
     },
     "/test/{testId}": {
       "schema": "ConnectionTest",

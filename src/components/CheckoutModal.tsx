@@ -133,36 +133,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setLoading(false);
 
     if (res.success) {
-      // Track purchase in Firestore ("fireworks") and SQLite backend audit log in real time
-      try {
-        await addDoc(collection(db, 'orders'), {
-          orderId: res.orderId,
-          customerName,
-          customerPhone,
-          userEmail: orderPayload.userEmail,
-          total,
-          paymentMethod: orderPayload.paymentMethod,
-          items: cartItems,
-          createdAt: Date.now()
-        });
-        await addDoc(collection(db, 'adminLogs'), {
-          actionType: 'NEW_PURCHASE',
-          actor: customerName,
-          details: `Order ${res.orderId} placed for GH₵${total.toLocaleString()} via ${orderPayload.paymentMethod}`,
-          createdAt: Date.now()
-        });
-        await fetch('/api/audit-logs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            actionType: 'NEW_PURCHASE',
-            actor: customerName,
-            details: `Order ${res.orderId} placed for GH₵${total.toLocaleString()}`
-          })
-        });
-      } catch (e) {
-        console.warn('Order tracking note:', e);
-      }
+      // Order persistence to both Firebase Firestore and SQLite Database is handled in ApiService and backend proxy
 
       setConfirmedOrder({
         orderId: res.orderId,
