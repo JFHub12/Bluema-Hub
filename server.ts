@@ -462,6 +462,44 @@ async function startServer() {
     }
   });
 
+  // Dedicated Resilient GET /api/products
+  // Fetches from Python SQLite backend first; falls back seamlessly to Firebase Firestore or cached records
+  app.get('/api/products', async (_req, res) => {
+    try {
+      const pyResponse = await fetch(`http://127.0.0.1:${PYTHON_PORT}/api/products`);
+      if (pyResponse.ok) {
+        const data = await pyResponse.json();
+        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+          res.json(data);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[Products GET fallback]: Python backend busy, querying Firestore...');
+    }
+
+    // Direct Firestore fallback
+    if (firestoreDb) {
+      try {
+        const snap = await getDocs(collection(firestoreDb, 'products'));
+        if (!snap.empty) {
+          const products: any[] = [];
+          snap.forEach(d => {
+            products.push(d.data());
+          });
+          if (products.length > 0) {
+            res.json({ products });
+            return;
+          }
+        }
+      } catch (fsErr) {
+        console.warn('[Products GET Firestore fallback error]:', fsErr);
+      }
+    }
+
+    res.json({ products: [] });
+  });
+
   // Dedicated Interceptors: Products Management in SQLite & Firebase Firestore
   app.post('/api/products', async (req, res) => {
     const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/products`;
