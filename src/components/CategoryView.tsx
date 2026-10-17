@@ -14,9 +14,6 @@ interface CategoryViewProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   theme?: 'dark' | 'light';
-  onOpenAdmin?: () => void;
-  isAdmin?: boolean;
-  onContactSupport?: () => void;
 }
 
 export const CategoryView: React.FC<CategoryViewProps> = ({
@@ -27,10 +24,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   onAddToCart,
   searchQuery,
   onSearchChange,
-  theme = 'light',
-  onOpenAdmin,
-  isAdmin = false,
-  onContactSupport
+  theme = 'light'
 }) => {
   const isDark = theme === 'dark';
   // Filter states (Matching Blueprint Panel 2: Size, Colour, Price)
@@ -389,70 +383,20 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
                 isDark ? 'bg-slate-900/50 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'
               }`}>
                 <CartAnimate size="md" />
-
-                {products.length === 0 ? (
-                  isAdmin ? (
-                    // Admin View: Information about adding products
-                    <div className="space-y-3">
-                      <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                        Catalog Ready For Admin Items
-                      </h3>
-                      <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        All mock items have been removed. Products will appear here immediately as you publish them from the Admin Console.
-                      </p>
-                      {onOpenAdmin && (
-                        <button
-                          onClick={onOpenAdmin}
-                          className={`mt-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                            isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
-                          }`}
-                        >
-                          Open Admin Console to Add Products
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    // Customer / User View: Warm and inviting message
-                    <div className="space-y-3">
-                      <h3 className={`text-lg sm:text-xl font-bold font-brand tracking-wide ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                        No Item Available. Come Again Later.
-                      </h3>
-                      <p className={`text-xs sm:text-sm max-w-md mx-auto leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                        We are currently preparing and curating our newest collection for you. Please check back with us soon, or reach out to our concierge desk for any inquiries.
-                      </p>
-                      {onContactSupport && (
-                        <div className="pt-2">
-                          <button
-                            onClick={onContactSupport}
-                            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                              isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-slate-950 hover:bg-black text-white'
-                            }`}
-                          >
-                            Contact Concierge & Support (059 883 0932)
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                ) : (
-                  // Filter Empty View: When products exist in store but filter returned 0
-                  <div className="space-y-3">
-                    <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                      No items match your filter
-                    </h3>
-                    <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Try selecting a different category or clearing active filters.
-                    </p>
-                    <button
-                      onClick={resetFilters}
-                      className={`mt-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                        isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
-                      }`}
-                    >
-                      Clear Filters / View All
-                    </button>
-                  </div>
-                )}
+                <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
+                  This department or category is currently empty
+                </h3>
+                <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  No items found in this section right now. Try exploring other departments or clearing active filters.
+                </p>
+                <button
+                  onClick={resetFilters}
+                  className={`mt-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
+                    isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
+                  }`}
+                >
+                  Clear Filters / View All
+                </button>
               </div>
             )}
           </main>

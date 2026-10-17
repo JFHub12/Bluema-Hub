@@ -317,36 +317,6 @@
         }
       },
       "required": ["status"]
-    },
-    "Cart": {
-      "title": "Cart",
-      "description": "Persistent shopping cart storing user shopping items in Firestore and SQLite",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "User identifier or email key",
-          "maxLength": 128
-        },
-        "userId": {
-          "type": "string",
-          "description": "User account ID",
-          "maxLength": 128
-        },
-        "items": {
-          "type": "array",
-          "description": "Shopping bag items array",
-          "items": {
-            "type": "object"
-          }
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Last updated ISO timestamp",
-          "maxLength": 50
-        }
-      },
-      "required": ["id", "items"]
     }
   },
   "firestore": {
@@ -365,10 +335,6 @@
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Customer orders collection"
-    },
-    "/carts/{cartId}": {
-      "schema": "Cart",
-      "description": "User shopping cart items collection"
     },
     "/support_tickets/{ticketId}": {
       "schema": "SupportTicket",

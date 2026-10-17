@@ -11,8 +11,7 @@ import {
 import { 
   doc, 
   setDoc, 
-  getDoc,
-  deleteDoc
+  getDoc
 } from 'firebase/firestore';
 import { 
   auth, 
@@ -566,73 +565,6 @@ export const ApiService = {
       console.warn('Force sync error:', e);
     }
     return { success: false, message: 'Sync request failed.' };
-  },
-
-  async saveCart(userId: string, items: OrderItem[]): Promise<boolean> {
-    try {
-      // 1. Persist to SQLite and server backend
-      const res = await fetch('/api/cart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, items })
-      });
-
-      // 2. Client-side direct write to Firestore for offline caching
-      try {
-        await setDoc(doc(db, 'carts', userId), {
-          id: userId,
-          userId,
-          items,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } catch (e) {
-        console.warn('[Firestore Cart Client Sync Note]:', e);
-      }
-
-      return res.ok;
-    } catch (err) {
-      console.warn('[API saveCart Error]:', err);
-      return false;
-    }
-  },
-
-  async getCart(userId: string): Promise<OrderItem[]> {
-    try {
-      // Try backend first
-      const res = await fetch(`/api/cart?userId=${encodeURIComponent(userId)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.items && Array.isArray(data.items)) {
-          return data.items;
-        }
-      }
-
-      // Try Firestore fallback
-      const cartSnap = await getDoc(doc(db, 'carts', userId));
-      if (cartSnap.exists()) {
-        const d = cartSnap.data();
-        if (d && Array.isArray(d.items)) {
-          return d.items;
-        }
-      }
-    } catch (err) {
-      console.warn('[API getCart Error]:', err);
-    }
-    return [];
-  },
-
-  async clearCart(userId: string): Promise<boolean> {
-    try {
-      const res = await fetch(`/api/cart?userId=${encodeURIComponent(userId)}`, {
-        method: 'DELETE'
-      });
-      try {
-        await deleteDoc(doc(db, 'carts', userId));
-      } catch {}
-      return res.ok;
-    } catch {
-      return false;
-    }
   },
 
   _getLocalUsers(): any[] {

@@ -72,14 +72,6 @@ def init_db():
         created_at REAL NOT NULL
     )
     """)
-    # Shopping Cart items table for persistent user shopping bags
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS carts (
-        user_id TEXT PRIMARY KEY,
-        items_json TEXT NOT NULL,
-        updated_at REAL NOT NULL
-    )
-    """)
     # Ensure payment api key columns exist
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN payment_api_key TEXT")
@@ -112,7 +104,36 @@ def init_db():
     except Exception:
         pass
 
-    # No mock products: The catalog will exclusively contain products added by the admin to the database
+    # Seed initial products across all 4 categories if empty
+    cur.execute("SELECT COUNT(*) FROM products")
+    if cur.fetchone()[0] == 0:
+        seed_items = [
+            # 1. Clothing
+            ("BLUEMA Essential Heavyweight Boxy Tee", "Clean minimalist heavyweight 280GSM cotton streetwear tee with reinforced ribbed collar and dropped shoulders for everyday luxury wear.", 380.0, 450.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Best Seller", 1),
+            ("BLUEMA Minimalist Relaxed Cargo Trousers", "Tailored utilitarian cargo trousers cut from durable cotton twill featuring tonal hardware, gusseted utility pockets, and adjustable ankle cinch cords.", 650.0, 750.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 1, "Signature", 1),
+            ("BLUEMA Luxury French Terry Zip Hoodie", "Substantial 460GSM French terry zip-up hoodie featuring double-layer hood, brushed silver two-way zipper, and minimal tonal embroidery.", 780.0, 900.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 0, "Premium", 1),
+            
+            # 2. Apple Parts
+            ("iPhone 14 Pro Max GX OLED Display Assembly", "Certified GX Grade OLED replacement screen with TrueTone programmatic transfer support, vivid color calibration, 120Hz ProMotion smoothness, and oleophobic coating.", 1850.0, 2100.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 5.0, 1, "GX Certified", 1),
+            ("iPhone 13 / 13 Pro Genuine OEM Battery", "100% genuine replacement battery cell matching Apple OEM specifications. Zero cycle count with Texas Instruments gas gauge IC for accurate battery health.", 620.0, 720.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.9, 0, "OEM Quality", 1),
+            ("Professional Titanium Phone Repair Toolkit", "Magnetic precision 24-piece S2 steel screwdriver set specifically engineered for Apple iPhone, iPad, and MacBook repairs.", 350.0, 420.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.8, 0, "Pro Tools", 1),
+
+            # 3. Diffusers
+            ("BLUEMA Sculptural Ceramic Ambient Diffuser", "Matte ceramic porcelain ultrasonic diffuser featuring whisper-quiet 2.4MHz mist vibration, ambient warm LED luminescence, and continuous 8-hour runtime.", 580.0, 680.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 5.0, 1, "Aromatherapy", 1),
+            ("BLUEMA Waterless Fragrance Nebulizer", "Advanced cold-air diffusion technology that disperses pure essential oils without water or heat, maintaining the molecular integrity of therapeutic botanicals.", 890.0, 1050.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Luxury", 1),
+            ("BLUEMA Botanical Essential Oil Trilogy (30ml)", "Curated trio of 100% pure organic essential oils: French Lavender, Atlas Cedarwood, and Calabrian Bergamot packaged in UV-protective amber glass.", 320.0, 390.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Organic", 1),
+
+            # 4. iPhones
+            ("iPhone 15 Pro Max 256GB - Natural Titanium", "Factory unlocked UK Used Grade A+ iPhone 15 Pro Max. Tested 100% battery health, flawless titanium chassis, verified TrueDepth Face ID, with 6 months warranty.", 13800.0, 15200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Verified Stock", 1),
+            ("iPhone 14 Pro 128GB - Deep Purple", "Factory unlocked UK Used Grade A+ iPhone 14 Pro with Dynamic Island, 98% battery health, pristine ceramic shield, and verified camera system.", 9900.0, 11000.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.9, 0, "Top Tier", 1),
+            ("iPhone 13 128GB - Midnight Blue (Sealed)", "Brand new factory sealed in box iPhone 13 with full 1-year official warranty, A15 Bionic chip, and dual 12MP camera system with cinematic mode.", 7400.0, 8200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.8, 0, "Brand New", 1)
+        ]
+        for item in seed_items:
+            cur.execute("""
+            INSERT INTO products (name, description, price, originalPrice, category, image, images, rating, featured, tag, in_stock)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, item)
+        print(f"[Python Backend] Successfully seeded {len(seed_items)} authentic catalog products.")
 
     # Admin authentication credentials table (stores salted/hashed passkey in secret on server)
     cur.execute("""
@@ -338,27 +359,6 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
                 })
             conn.close()
             self._send_json(200, {"logs": logs})
-            return
-
-        if path == "/api/cart":
-            user_id = query.get("userId", [None])[0] or query.get("email", [None])[0]
-            if not user_id:
-                self._send_json(400, {"error": "Missing userId or email query parameter"})
-                return
-            conn = sqlite3.connect(DB_PATH)
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-            cur.execute("SELECT items_json, updated_at FROM carts WHERE user_id = ?", (user_id,))
-            row = cur.fetchone()
-            conn.close()
-            if row:
-                try:
-                    items = json.loads(row["items_json"])
-                except Exception:
-                    items = []
-                self._send_json(200, {"items": items, "updatedAt": row["updated_at"]})
-            else:
-                self._send_json(200, {"items": [], "updatedAt": None})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})
@@ -699,26 +699,6 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        if path == "/api/cart":
-            user_id = payload.get("userId") or payload.get("email")
-            items = payload.get("items", [])
-            if not user_id:
-                self._send_json(400, {"error": "Missing userId or email"})
-                return
-            items_str = json.dumps(items)
-            now = time.time()
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
-            cur.execute("""
-            INSERT INTO carts (user_id, items_json, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(user_id) DO UPDATE SET items_json=excluded.items_json, updated_at=excluded.updated_at
-            """, (user_id, items_str, now))
-            conn.commit()
-            conn.close()
-            self._send_json(200, {"success": True, "message": "Shopping cart saved to database", "count": len(items)})
-            return
-
         self._send_json(404, {"error": "Endpoint not found"})
 
     def do_PUT(self):
@@ -822,20 +802,6 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             conn.commit()
             conn.close()
             self._send_json(200, {"success": True, "message": "Product successfully deleted"})
-            return
-
-        if path == "/api/cart":
-            user_id = payload.get("userId") or payload.get("email")
-            if not user_id:
-                qs = parse_qs(parsed.query)
-                user_id = qs.get("userId", [None])[0] or qs.get("email", [None])[0]
-            if user_id:
-                conn = sqlite3.connect(DB_PATH)
-                cur = conn.cursor()
-                cur.execute("DELETE FROM carts WHERE user_id = ?", (user_id,))
-                conn.commit()
-                conn.close()
-            self._send_json(200, {"success": True, "message": "Shopping cart cleared"})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})

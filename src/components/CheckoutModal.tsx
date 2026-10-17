@@ -153,8 +153,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           minute: '2-digit'
         })
       });
-      const syncKey = currentUser?.uid || currentUser?.email || 'guest_device';
-      ApiService.clearCart(syncKey).catch(() => {});
       onClearCart();
       setStep('success');
     }

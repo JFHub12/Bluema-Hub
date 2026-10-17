@@ -175,15 +175,25 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if (isAdmin() || true) && isValidId(productId) && isValidProduct(incoming());
       allow update: if (isAdmin() || true) && isValidId(productId) && isValidProduct(incoming()) && incoming().id == existing().id;
-      allow delete: if isAdmin() || true;
+      allow delete: if isAdmin();
     }
 
     // Orders Collection
     match /orders/{orderId} {
       allow get: if true;
-      allow list: if true;
+      allow list: if isSignedIn() || isAdmin();
       allow create: if isValidId(orderId) && isValidOrder(incoming());
-      allow update: if isValidId(orderId) && isValidOrder(incoming()) && incoming().id == existing().id;
+      allow update: if (
+        isAdmin() ||
+        (
+          isValidOrder(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt &&
+          existing().status != 'delivered' && 
+          existing().status != 'cancelled' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['customerPhone', 'shippingAddress'])
+        )
+      );
       allow delete: if isAdmin();
     }
 
@@ -201,13 +211,6 @@ service cloud.firestore {
       allow create: if isValidId(logId) && isValidAuditLog(incoming());
       allow update: if isValidId(logId) && isValidAuditLog(incoming());
       allow delete: if isAdmin();
-    }
-
-    // Shopping Carts Collection (store shopping cart items in Firestore & SQLite database)
-    match /carts/{cartId} {
-      allow get, list: if true;
-      allow create, update: if true;
-      allow delete: if true;
     }
   }
 }
