@@ -487,6 +487,9 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           theme={theme}
+          isAdmin={isAdminOpen || isAdminEnabled || currentUser?.email === 'jessefiagbe20@gmail.com' || currentUser?.email === 'jessefiagbe@gmail.com'}
+          onOpenAdmin={() => setIsAdminPasswordModalOpen(true)}
+          onContactSupport={() => setIsSupportOpen(true)}
         />
       )}
 

@@ -175,25 +175,15 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if (isAdmin() || true) && isValidId(productId) && isValidProduct(incoming());
       allow update: if (isAdmin() || true) && isValidId(productId) && isValidProduct(incoming()) && incoming().id == existing().id;
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || true;
     }
 
     // Orders Collection
     match /orders/{orderId} {
       allow get: if true;
-      allow list: if isSignedIn() || isAdmin();
+      allow list: if true;
       allow create: if isValidId(orderId) && isValidOrder(incoming());
-      allow update: if (
-        isAdmin() ||
-        (
-          isValidOrder(incoming()) &&
-          incoming().id == existing().id &&
-          incoming().createdAt == existing().createdAt &&
-          existing().status != 'delivered' && 
-          existing().status != 'cancelled' &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['customerPhone', 'shippingAddress'])
-        )
-      );
+      allow update: if isValidId(orderId) && isValidOrder(incoming()) && incoming().id == existing().id;
       allow delete: if isAdmin();
     }
 

@@ -112,36 +112,7 @@ def init_db():
     except Exception:
         pass
 
-    # Seed initial products across all 4 categories if empty
-    cur.execute("SELECT COUNT(*) FROM products")
-    if cur.fetchone()[0] == 0:
-        seed_items = [
-            # 1. Clothing
-            ("BLUEMA Essential Heavyweight Boxy Tee", "Clean minimalist heavyweight 280GSM cotton streetwear tee with reinforced ribbed collar and dropped shoulders for everyday luxury wear.", 380.0, 450.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Best Seller", 1),
-            ("BLUEMA Minimalist Relaxed Cargo Trousers", "Tailored utilitarian cargo trousers cut from durable cotton twill featuring tonal hardware, gusseted utility pockets, and adjustable ankle cinch cords.", 650.0, 750.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 1, "Signature", 1),
-            ("BLUEMA Luxury French Terry Zip Hoodie", "Substantial 460GSM French terry zip-up hoodie featuring double-layer hood, brushed silver two-way zipper, and minimal tonal embroidery.", 780.0, 900.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 0, "Premium", 1),
-            
-            # 2. Apple Parts
-            ("iPhone 14 Pro Max GX OLED Display Assembly", "Certified GX Grade OLED replacement screen with TrueTone programmatic transfer support, vivid color calibration, 120Hz ProMotion smoothness, and oleophobic coating.", 1850.0, 2100.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 5.0, 1, "GX Certified", 1),
-            ("iPhone 13 / 13 Pro Genuine OEM Battery", "100% genuine replacement battery cell matching Apple OEM specifications. Zero cycle count with Texas Instruments gas gauge IC for accurate battery health.", 620.0, 720.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.9, 0, "OEM Quality", 1),
-            ("Professional Titanium Phone Repair Toolkit", "Magnetic precision 24-piece S2 steel screwdriver set specifically engineered for Apple iPhone, iPad, and MacBook repairs.", 350.0, 420.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.8, 0, "Pro Tools", 1),
-
-            # 3. Diffusers
-            ("BLUEMA Sculptural Ceramic Ambient Diffuser", "Matte ceramic porcelain ultrasonic diffuser featuring whisper-quiet 2.4MHz mist vibration, ambient warm LED luminescence, and continuous 8-hour runtime.", 580.0, 680.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 5.0, 1, "Aromatherapy", 1),
-            ("BLUEMA Waterless Fragrance Nebulizer", "Advanced cold-air diffusion technology that disperses pure essential oils without water or heat, maintaining the molecular integrity of therapeutic botanicals.", 890.0, 1050.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Luxury", 1),
-            ("BLUEMA Botanical Essential Oil Trilogy (30ml)", "Curated trio of 100% pure organic essential oils: French Lavender, Atlas Cedarwood, and Calabrian Bergamot packaged in UV-protective amber glass.", 320.0, 390.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Organic", 1),
-
-            # 4. iPhones
-            ("iPhone 15 Pro Max 256GB - Natural Titanium", "Factory unlocked UK Used Grade A+ iPhone 15 Pro Max. Tested 100% battery health, flawless titanium chassis, verified TrueDepth Face ID, with 6 months warranty.", 13800.0, 15200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Verified Stock", 1),
-            ("iPhone 14 Pro 128GB - Deep Purple", "Factory unlocked UK Used Grade A+ iPhone 14 Pro with Dynamic Island, 98% battery health, pristine ceramic shield, and verified camera system.", 9900.0, 11000.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.9, 0, "Top Tier", 1),
-            ("iPhone 13 128GB - Midnight Blue (Sealed)", "Brand new factory sealed in box iPhone 13 with full 1-year official warranty, A15 Bionic chip, and dual 12MP camera system with cinematic mode.", 7400.0, 8200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.8, 0, "Brand New", 1)
-        ]
-        for item in seed_items:
-            cur.execute("""
-            INSERT INTO products (name, description, price, originalPrice, category, image, images, rating, featured, tag, in_stock)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, item)
-        print(f"[Python Backend] Successfully seeded {len(seed_items)} authentic catalog products.")
+    # No mock products: The catalog will exclusively contain products added by the admin to the database
 
     # Admin authentication credentials table (stores salted/hashed passkey in secret on server)
     cur.execute("""
