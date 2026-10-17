@@ -72,6 +72,14 @@ def init_db():
         created_at REAL NOT NULL
     )
     """)
+    # Shopping Cart items table for persistent user shopping bags
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS carts (
+        user_id TEXT PRIMARY KEY,
+        items_json TEXT NOT NULL,
+        updated_at REAL NOT NULL
+    )
+    """)
     # Ensure payment api key columns exist
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN payment_api_key TEXT")
@@ -359,6 +367,27 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
                 })
             conn.close()
             self._send_json(200, {"logs": logs})
+            return
+
+        if path == "/api/cart":
+            user_id = query.get("userId", [None])[0] or query.get("email", [None])[0]
+            if not user_id:
+                self._send_json(400, {"error": "Missing userId or email query parameter"})
+                return
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT items_json, updated_at FROM carts WHERE user_id = ?", (user_id,))
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                try:
+                    items = json.loads(row["items_json"])
+                except Exception:
+                    items = []
+                self._send_json(200, {"items": items, "updatedAt": row["updated_at"]})
+            else:
+                self._send_json(200, {"items": [], "updatedAt": None})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})
@@ -699,6 +728,26 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if path == "/api/cart":
+            user_id = payload.get("userId") or payload.get("email")
+            items = payload.get("items", [])
+            if not user_id:
+                self._send_json(400, {"error": "Missing userId or email"})
+                return
+            items_str = json.dumps(items)
+            now = time.time()
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("""
+            INSERT INTO carts (user_id, items_json, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET items_json=excluded.items_json, updated_at=excluded.updated_at
+            """, (user_id, items_str, now))
+            conn.commit()
+            conn.close()
+            self._send_json(200, {"success": True, "message": "Shopping cart saved to database", "count": len(items)})
+            return
+
         self._send_json(404, {"error": "Endpoint not found"})
 
     def do_PUT(self):
@@ -802,6 +851,20 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             conn.commit()
             conn.close()
             self._send_json(200, {"success": True, "message": "Product successfully deleted"})
+            return
+
+        if path == "/api/cart":
+            user_id = payload.get("userId") or payload.get("email")
+            if not user_id:
+                qs = parse_qs(parsed.query)
+                user_id = qs.get("userId", [None])[0] or qs.get("email", [None])[0]
+            if user_id:
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                cur.execute("DELETE FROM carts WHERE user_id = ?", (user_id,))
+                conn.commit()
+                conn.close()
+            self._send_json(200, {"success": True, "message": "Shopping cart cleared"})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})

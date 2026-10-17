@@ -1122,6 +1122,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                           <td className="py-3 px-3"><span className="text-emerald-400">● Synced</span></td>
                         </tr>
                         <tr>
+                          <td className="py-3 px-3 font-bold text-white">Shopping Carts</td>
+                          <td className="py-3 px-3 text-amber-300">/carts/{'{userId}'}</td>
+                          <td className="py-3 px-3 text-slate-300">carts</td>
+                          <td className="py-3 px-3 text-emerald-400">User Bag / Persistent Storage</td>
+                          <td className="py-3 px-3"><span className="text-emerald-400">● Synced</span></td>
+                        </tr>
+                        <tr>
                           <td className="py-3 px-3 font-bold text-white">User Accounts</td>
                           <td className="py-3 px-3 text-amber-300">/users/{'{uid}'}</td>
                           <td className="py-3 px-3 text-slate-300">users</td>

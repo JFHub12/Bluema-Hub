@@ -392,6 +392,76 @@ async function startServer() {
     }
   });
 
+  // Dedicated Interceptor: POST /api/cart (Store shopping cart items in both SQLite and Firebase Firestore)
+  app.post('/api/cart', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/cart`;
+    try {
+      // 1. Save to SQLite database via Python microservice
+      const pyResponse = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+
+      // 2. Also save to Firebase Firestore in real-time
+      const userId = req.body.userId || req.body.email;
+      if (firestoreDb && userId) {
+        try {
+          const cartId = String(userId);
+          await setDoc(doc(firestoreDb, 'carts', cartId), {
+            id: cartId,
+            userId: cartId,
+            items: req.body.items || [],
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+          console.log(`[Firebase Sync] Cart for ${cartId} saved to Firebase Firestore and SQLite.`);
+        } catch (fsErr) {
+          console.warn('[Firebase Sync Cart Warning]:', fsErr);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (error) {
+      console.error('[Error handling /api/cart POST]:', error);
+      res.status(500).json({ error: 'Failed to save shopping cart' });
+    }
+  });
+
+  // Dedicated Interceptor: DELETE /api/cart (Clear shopping cart in SQLite and Firebase Firestore)
+  app.delete('/api/cart', async (req, res) => {
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/cart${queryString}`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body || {})
+      });
+      const dataText = await pyResponse.text();
+
+      const userId = req.body?.userId || req.query.userId || req.query.email;
+      if (firestoreDb && userId) {
+        try {
+          const cartId = String(userId);
+          await deleteDoc(doc(firestoreDb, 'carts', cartId));
+          console.log(`[Firebase Sync] Cart for ${cartId} cleared in Firebase Firestore.`);
+        } catch (fsErr) {
+          console.warn('[Firebase Sync Cart Delete Warning]:', fsErr);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (error) {
+      console.error('[Error handling /api/cart DELETE]:', error);
+      res.status(500).json({ error: 'Failed to clear cart' });
+    }
+  });
+
   // Dedicated Interceptors: Products Management in SQLite & Firebase Firestore
   app.post('/api/products', async (req, res) => {
     const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/products`;

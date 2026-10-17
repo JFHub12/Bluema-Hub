@@ -218,14 +218,28 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Save cart to local storage whenever it changes
+  // Save cart to local storage and sync to SQLite database & Firebase Firestore
   useEffect(() => {
     try {
       localStorage.setItem('verified_cart', JSON.stringify(cartItems));
+      const syncKey = currentUser?.uid || currentUser?.email || 'guest_device';
+      ApiService.saveCart(syncKey, cartItems).catch(() => {});
     } catch (e) {
       console.error('Failed to save cart:', e);
     }
-  }, [cartItems]);
+  }, [cartItems, currentUser]);
+
+  // When a user signs in, load their persisted shopping cart from SQLite & Firebase
+  useEffect(() => {
+    if (currentUser?.uid || currentUser?.email) {
+      const syncKey = currentUser.uid || currentUser.email;
+      ApiService.getCart(syncKey).then(remoteItems => {
+        if (remoteItems && remoteItems.length > 0 && cartItems.length === 0) {
+          setCartItems(remoteItems);
+        }
+      }).catch(() => {});
+    }
+  }, [currentUser]);
 
   // Page navigation helper
   const handleNavigate = (
