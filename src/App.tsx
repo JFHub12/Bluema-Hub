@@ -18,7 +18,7 @@ import { PrivacyBanner } from './components/PrivacyBanner';
 import { Footer } from './components/Footer';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
-import { CATEGORIES, Product } from './data/products';
+import { CATEGORIES, Product, PRODUCTS } from './data/products';
 import { CartAnimate } from './components/CartAnimate';
 import { 
   ApiService, 
@@ -66,8 +66,8 @@ export default function App() {
   const [isAdminEnabled, setIsAdminEnabled] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{ show: boolean; success: boolean; message: string } | null>(null);
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -218,14 +218,28 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Save cart to local storage whenever it changes
+  // Save cart to local storage and sync to SQLite database & Firebase Firestore
   useEffect(() => {
     try {
       localStorage.setItem('verified_cart', JSON.stringify(cartItems));
+      const syncKey = currentUser?.uid || currentUser?.email || 'guest_device';
+      ApiService.saveCart(syncKey, cartItems).catch(() => {});
     } catch (e) {
       console.error('Failed to save cart:', e);
     }
-  }, [cartItems]);
+  }, [cartItems, currentUser]);
+
+  // When a user signs in, load their persisted shopping cart from SQLite & Firebase
+  useEffect(() => {
+    if (currentUser?.uid || currentUser?.email) {
+      const syncKey = currentUser.uid || currentUser.email;
+      ApiService.getCart(syncKey).then(remoteItems => {
+        if (remoteItems && remoteItems.length > 0 && cartItems.length === 0) {
+          setCartItems(remoteItems);
+        }
+      }).catch(() => {});
+    }
+  }, [currentUser]);
 
   // Page navigation helper
   const handleNavigate = (
@@ -329,31 +343,38 @@ export default function App() {
     }, 4000);
   };
 
-  const [fetchError, setFetchError] = useState<string | null>(null);
-
-  const fetchProducts = () => {
-    setIsLoading(true);
-    setFetchError(null);
-    fetch('/api/products')
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data.products && Array.isArray(data.products)) {
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
           setProducts(data.products);
-        } else {
-          setProducts([]);
+          return;
         }
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.warn('[Products] Database fetch note:', err);
-        // STRICT DIRECTIVE: Never issue any fallback to mockness again!
-        setProducts([]);
-        setFetchError('Unable to connect to product database. Retrying...');
-        setIsLoading(false);
-      });
+      }
+    } catch (err) {
+      console.warn('[Products] API fetch note:', err);
+    }
+
+    // Direct Firestore fallback
+    try {
+      const { collection, getDocs } = await import('firebase/firestore');
+      const { db } = await import('./firebase');
+      const querySnap = await getDocs(collection(db, 'products'));
+      if (!querySnap.empty) {
+        const firestoreProducts: Product[] = [];
+        querySnap.forEach(docSnap => {
+          firestoreProducts.push(docSnap.data() as Product);
+        });
+        if (firestoreProducts.length > 0) {
+          setProducts(firestoreProducts);
+          return;
+        }
+      }
+    } catch (fsErr) {
+      console.warn('[Products] Firestore fallback note:', fsErr);
+    }
   };
 
   useEffect(() => {
@@ -457,48 +478,19 @@ export default function App() {
 
       {/* PAGE 3: Category Page with Faceted Filters (Blueprint Panel 2) */}
       {activePage === 'shop' && (
-        isLoading ? (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 px-4 text-center space-y-4">
-            <CartAnimate size="lg" />
-            <div className="space-y-1">
-              <h3 className="text-base font-bold font-brand uppercase tracking-wider">
-                Connecting To Store Database...
-              </h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                Loading live catalog directly from backend database.
-              </p>
-            </div>
-          </div>
-        ) : fetchError ? (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 px-4 text-center space-y-4">
-            <CartAnimate size="md" />
-            <div className="space-y-1">
-              <h3 className="text-base font-bold font-brand uppercase tracking-wider text-rose-500">
-                Database State Synchronized
-              </h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                {fetchError} The catalog prioritizes backend storage over mock datasets.
-              </p>
-              <button
-                onClick={fetchProducts}
-                className="mt-3 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
-              >
-                Retry Database Connection
-              </button>
-            </div>
-          </div>
-        ) : (
-          <CategoryView
-            selectedCategory={selectedCategory}
-            onSelectCategory={(cat) => setSelectedCategory(cat)}
-            products={products}
-            onSelectProduct={(product) => setSelectedProduct(product)}
-            onAddToCart={(product, opts) => handleAttemptAddToCart(product, opts)}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            theme={theme}
-          />
-        )
+        <CategoryView
+          selectedCategory={selectedCategory}
+          onSelectCategory={(cat) => setSelectedCategory(cat)}
+          products={products}
+          onSelectProduct={(product) => setSelectedProduct(product)}
+          onAddToCart={(product, opts) => handleAttemptAddToCart(product, opts)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          theme={theme}
+          isAdmin={isAdminOpen || isAdminEnabled || currentUser?.email === 'jessefiagbe20@gmail.com' || currentUser?.email === 'jessefiagbe@gmail.com'}
+          onOpenAdmin={() => setIsAdminPasswordModalOpen(true)}
+          onContactSupport={() => setIsSupportOpen(true)}
+        />
       )}
 
       {/* PAGE 4: Dedicated Cart Page (Matching the reference screenshot in a premium way) */}

@@ -64,6 +64,47 @@ export interface Order {
   createdAt: number;
 }
 
+export interface Review {
+  id: string;
+  productId: string;
+  userName: string;
+  userEmail?: string;
+  rating: number;
+  comment: string;
+  createdAt: number;
+}
+
+export interface SavedItem {
+  id: string;
+  userId: string;
+  productId: string;
+  productName: string;
+  price: number;
+  category: string;
+  image?: string;
+  itemType: 'wishlist' | 'cart';
+  quantity: number;
+  createdAt: number;
+}
+
+export interface DatabaseOverview {
+  success: boolean;
+  database: string;
+  counts: {
+    products: number;
+    orders: number;
+    users: number;
+    inquiries: number;
+    reviews: number;
+    savedItems: number;
+    auditLogs: number;
+  };
+  recentLogs?: any[];
+  recentReviews?: Review[];
+  recentSaved?: SavedItem[];
+  timestamp: number;
+}
+
 export const BRAND_NAME = "BLUEMA HUB";
 export const BRAND_TAGLINE = "Quality products. Better living.";
 export const PAYMENT_API_KEY = "05935632-6968-4a2e-919a-8c0ea161d3f6";
@@ -565,6 +606,118 @@ export const ApiService = {
       console.warn('Force sync error:', e);
     }
     return { success: false, message: 'Sync request failed.' };
+  },
+
+  /**
+   * Reviews & Customer Ratings stored in database
+   */
+  async getReviews(productId?: string): Promise<Review[]> {
+    try {
+      const url = productId ? `/api/reviews?productId=${encodeURIComponent(productId)}` : '/api/reviews';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return data.reviews || [];
+      }
+    } catch (e) {
+      console.warn('[API] Fetching reviews error:', e);
+    }
+    return [];
+  },
+
+  async addReview(payload: {
+    productId: string;
+    userName: string;
+    userEmail?: string;
+    rating: number;
+    comment: string;
+  }): Promise<{ success: boolean; review?: Review; error?: string }> {
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, review: data.review };
+      }
+      return { success: false, error: data.error || 'Failed to submit review' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Network error submitting review' };
+    }
+  },
+
+  /**
+   * Wishlist & Saved Items stored in database
+   */
+  async getSavedItems(userId: string = 'guest-session', itemType: string = 'wishlist'): Promise<SavedItem[]> {
+    try {
+      const url = `/api/saved-items?userId=${encodeURIComponent(userId)}&itemType=${encodeURIComponent(itemType)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return data.savedItems || [];
+      }
+    } catch (e) {
+      console.warn('[API] Fetching saved items error:', e);
+    }
+    return [];
+  },
+
+  async saveItem(payload: {
+    userId?: string;
+    productId: string;
+    productName: string;
+    price: number;
+    category?: string;
+    image?: string;
+    itemType?: 'wishlist' | 'cart';
+    quantity?: number;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      const res = await fetch('/api/saved-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, id: data.id };
+      }
+      return { success: false, error: data.error || 'Failed to save item' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Network error saving item' };
+    }
+  },
+
+  async removeSavedItem(id: string): Promise<{ success: boolean }> {
+    try {
+      const res = await fetch('/api/saved-items', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      return { success: Boolean(res.ok && data.success) };
+    } catch {
+      return { success: false };
+    }
+  },
+
+  /**
+   * Database Overview across all 6 tables / collections
+   */
+  async getDatabaseOverview(): Promise<DatabaseOverview | null> {
+    try {
+      const res = await fetch('/api/database/overview');
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('[API] Database overview fetch note:', e);
+    }
+    return null;
   },
 
   _getLocalUsers(): any[] {

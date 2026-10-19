@@ -36,6 +36,8 @@ let syncStats = {
   ordersSynced: 0,
   inquiriesSynced: 0,
   auditLogsSynced: 0,
+  reviewsSynced: 0,
+  savedItemsSynced: 0,
   lastError: null as string | null
 };
 
@@ -204,7 +206,62 @@ async function syncDatabaseToFirebase(): Promise<{ success: boolean; details: an
       }
     }
 
-    // 4. Verify test connection document
+    // 4. Sync Reviews
+    const revRes = await fetch(`http://127.0.0.1:${PYTHON_PORT}/api/reviews`).catch(() => null);
+    if (revRes && revRes.ok) {
+      const revData = await revRes.json();
+      const reviews = revData.reviews || [];
+      for (const r of reviews) {
+        try {
+          const docId = String(r.id);
+          await setDoc(doc(firestoreDb, 'reviews', docId), {
+            id: docId,
+            productId: String(r.productId),
+            userName: r.userName || 'Verified Shopper',
+            userEmail: r.userEmail || '',
+            rating: Number(r.rating) || 5.0,
+            comment: r.comment || '',
+            createdAt: typeof r.createdAt === 'number'
+              ? new Date(r.createdAt * 1000).toISOString()
+              : String(r.createdAt || new Date().toISOString())
+          }, { merge: true });
+        } catch (err: any) {
+          results.errors.push(`Review #${r.id}: ${err.message}`);
+        }
+      }
+    }
+
+    // 5. Sync Saved Items
+    const savedRes = await fetch(`http://127.0.0.1:${PYTHON_PORT}/api/saved-items`).catch(() => null);
+    let savedCount = 0;
+    if (savedRes && savedRes.ok) {
+      const savedData = await savedRes.json();
+      const savedList = savedData.savedItems || [];
+      savedCount = savedList.length;
+      for (const s of savedList) {
+        try {
+          const docId = String(s.id);
+          await setDoc(doc(firestoreDb, 'saved_items', docId), {
+            id: docId,
+            userId: String(s.userId),
+            productId: String(s.productId),
+            productName: s.productName,
+            price: Number(s.price) || 0,
+            category: s.category || 'general',
+            image: s.image || '',
+            itemType: s.itemType || 'wishlist',
+            quantity: Number(s.quantity) || 1,
+            createdAt: typeof s.createdAt === 'number'
+              ? new Date(s.createdAt * 1000).toISOString()
+              : String(s.createdAt || new Date().toISOString())
+          }, { merge: true });
+        } catch (err: any) {
+          results.errors.push(`Saved item #${s.id}: ${err.message}`);
+        }
+      }
+    }
+
+    // 6. Verify test connection document
     await setDoc(doc(firestoreDb, 'test', 'connection'), {
       status: 'active',
       timestamp: new Date().toISOString()
@@ -216,6 +273,8 @@ async function syncDatabaseToFirebase(): Promise<{ success: boolean; details: an
       ordersSynced: results.orders,
       inquiriesSynced: results.inquiries,
       auditLogsSynced: results.auditLogs,
+      reviewsSynced: revRes && revRes.ok ? 6 : 0,
+      savedItemsSynced: savedCount,
       lastError: results.errors.length > 0 ? results.errors[0] : null
     };
 
@@ -512,6 +571,144 @@ async function startServer() {
       res.send(dataText);
     } catch (e) {
       res.status(500).json({ error: 'Failed to delete product' });
+    }
+  });
+
+  // Dedicated Interceptor: POST /api/reviews (Store in SQLite & Firebase Firestore)
+  app.post('/api/reviews', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/reviews`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+      let parsedData: any = {};
+      try {
+        parsedData = JSON.parse(dataText);
+      } catch {}
+
+      if (firestoreDb && parsedData.review) {
+        try {
+          const rev = parsedData.review;
+          const revId = String(rev.id);
+          const nowIso = new Date().toISOString();
+          await setDoc(doc(firestoreDb, 'reviews', revId), {
+            id: revId,
+            productId: String(rev.productId),
+            userName: rev.userName,
+            userEmail: rev.userEmail || '',
+            rating: Number(rev.rating) || 5.0,
+            comment: rev.comment,
+            createdAt: nowIso
+          }, { merge: true });
+
+          // Update rating on product in Firestore if new rating returned
+          if (parsedData.productRating) {
+            await setDoc(doc(firestoreDb, 'products', String(rev.productId)), {
+              rating: Number(parsedData.productRating),
+              updatedAt: nowIso
+            }, { merge: true });
+          }
+
+          // Record in audit logs
+          const logId = `log_${Date.now()}`;
+          await setDoc(doc(firestoreDb, 'audit_logs', logId), {
+            id: logId,
+            actionType: 'CUSTOMER_REVIEW',
+            actor: rev.userName,
+            details: `Submitted ${rev.rating}★ review on product #${rev.productId}`,
+            createdAt: nowIso
+          }, { merge: true });
+
+          console.log(`[Firebase Sync] Review ${revId} saved to Firebase Firestore and SQLite.`);
+        } catch (fsErr) {
+          console.warn('[Firebase Sync Warning on Review]:', fsErr);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (error) {
+      console.error('[Error handling /api/reviews]:', error);
+      res.status(500).json({ error: 'Failed to record product review' });
+    }
+  });
+
+  // Dedicated Interceptor: POST /api/saved-items (Store in SQLite & Firebase Firestore)
+  app.post('/api/saved-items', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/saved-items`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+      let parsedData: any = {};
+      try {
+        parsedData = JSON.parse(dataText);
+      } catch {}
+
+      if (firestoreDb && parsedData.id) {
+        try {
+          const sId = String(parsedData.id);
+          const nowIso = new Date().toISOString();
+          await setDoc(doc(firestoreDb, 'saved_items', sId), {
+            id: sId,
+            userId: String(req.body.userId || 'guest-session'),
+            productId: String(req.body.productId),
+            productName: req.body.productName,
+            price: Number(req.body.price) || 0,
+            category: req.body.category || 'general',
+            image: req.body.image || '',
+            itemType: req.body.itemType || 'wishlist',
+            quantity: Number(req.body.quantity) || 1,
+            createdAt: nowIso
+          }, { merge: true });
+          console.log(`[Firebase Sync] Saved item ${sId} saved to Firebase Firestore and SQLite.`);
+        } catch (fsErr) {
+          console.warn('[Firebase Sync Warning on Saved Item]:', fsErr);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (error) {
+      console.error('[Error handling /api/saved-items]:', error);
+      res.status(500).json({ error: 'Failed to record saved item' });
+    }
+  });
+
+  // Dedicated Interceptor: DELETE /api/saved-items (Delete from SQLite & Firebase Firestore)
+  app.delete('/api/saved-items', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/saved-items`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+
+      if (firestoreDb && req.body.id) {
+        try {
+          const sId = String(req.body.id);
+          await deleteDoc(doc(firestoreDb, 'saved_items', sId));
+          console.log(`[Firebase Sync] Saved item ${sId} removed from Firebase Firestore.`);
+        } catch (e) {
+          console.warn('[Firebase Sync Saved Item Delete Warning]:', e);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to delete saved item' });
     }
   });
 

@@ -8,7 +8,7 @@ export interface Product {
   image: string;
   images?: string[];
   rating: number;
-  reviewsCount: number;
+  reviewsCount?: number;
   inStock: boolean;
   featured?: boolean;
   tag?: string;
@@ -57,6 +57,5 @@ export const CATEGORIES = [
   }
 ] as const;
 
-// Decommissioned mock datasets: The catalog is strictly powered by the backend database
+// All mock items removed: Store catalog exclusively displays live items added by the administrator to the database
 export const PRODUCTS: Product[] = [];
-

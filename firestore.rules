@@ -124,6 +124,33 @@ service cloud.firestore {
         data.createdAt is string && data.createdAt.size() <= 50;
     }
 
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'productId', 'userName', 'rating', 'comment', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'productId', 'userName', 'userEmail', 'rating', 'comment', 'createdAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.productId is string && data.productId.size() > 0 && data.productId.size() <= 64 &&
+        data.userName is string && data.userName.size() > 0 && data.userName.size() <= 100 &&
+        (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 150)) &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.comment is string && data.comment.size() > 0 && data.comment.size() <= 2000 &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidSavedItem(data) {
+      return data.keys().hasAll(['id', 'userId', 'productId', 'productName', 'price', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'productId', 'productName', 'price', 'category', 'image', 'itemType', 'quantity', 'createdAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+        data.productId is string && data.productId.size() > 0 && data.productId.size() <= 64 &&
+        data.productName is string && data.productName.size() > 0 && data.productName.size() <= 150 &&
+        data.price is number && data.price >= 0 &&
+        (!('category' in data) || (data.category is string && data.category.size() <= 60)) &&
+        (!('image' in data) || (data.image is string && data.image.size() <= 500)) &&
+        (!('itemType' in data) || (data.itemType is string && data.itemType.size() <= 30)) &&
+        (!('quantity' in data) || (data.quantity is number && data.quantity >= 1)) &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
     // 4. Collection Match Rules
 
     // Smoke Test Connection
@@ -203,6 +230,21 @@ service cloud.firestore {
       allow create: if isValidId(ticketId) && isValidSupportTicket(incoming());
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Reviews Collection
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isValidId(reviewId) && isValidReview(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // Saved Items & Wishlist Collection
+    match /saved_items/{itemId} {
+      allow get, list: if true;
+      allow create: if isValidId(itemId) && isValidSavedItem(incoming());
+      allow update: if isValidId(itemId) && isValidSavedItem(incoming());
+      allow delete: if true;
     }
 
     // Audit Logs Collection

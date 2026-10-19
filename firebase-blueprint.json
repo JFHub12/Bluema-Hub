@@ -317,6 +317,104 @@
         }
       },
       "required": ["status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer product review and rating stored in database",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique review identifier",
+          "maxLength": 64
+        },
+        "productId": {
+          "type": "string",
+          "description": "ID of product reviewed",
+          "maxLength": 64
+        },
+        "userName": {
+          "type": "string",
+          "description": "Name of reviewer",
+          "maxLength": 100
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "Reviewer email address",
+          "maxLength": 150
+        },
+        "rating": {
+          "type": "number",
+          "description": "Star rating from 1 to 5"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Review comments and feedback text",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Submission timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "productId", "userName", "rating", "comment", "createdAt"]
+    },
+    "SavedItem": {
+      "title": "SavedItem",
+      "description": "Customer wishlist or saved product selection stored in database",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique saved item record ID",
+          "maxLength": 64
+        },
+        "userId": {
+          "type": "string",
+          "description": "Customer user identifier or session key",
+          "maxLength": 128
+        },
+        "productId": {
+          "type": "string",
+          "description": "Referenced product SKU or identifier",
+          "maxLength": 64
+        },
+        "productName": {
+          "type": "string",
+          "description": "Name of saved product",
+          "maxLength": 150
+        },
+        "price": {
+          "type": "number",
+          "description": "Product price in GHS"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of product",
+          "maxLength": 60
+        },
+        "image": {
+          "type": "string",
+          "description": "Product display thumbnail URL",
+          "maxLength": 500
+        },
+        "itemType": {
+          "type": "string",
+          "description": "Type of saved record: wishlist or cart",
+          "maxLength": 30
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity saved"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of save action",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "productId", "productName", "price", "createdAt"]
     }
   },
   "firestore": {
@@ -343,6 +441,14 @@
     "/audit_logs/{logId}": {
       "schema": "AuditLog",
       "description": "Activity audit records for commerce and admin actions"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer product reviews and ratings collection"
+    },
+    "/saved_items/{itemId}": {
+      "schema": "SavedItem",
+      "description": "Customer saved items and wishlist collection"
     },
     "/test/{testId}": {
       "schema": "ConnectionTest",
