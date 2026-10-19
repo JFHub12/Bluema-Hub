@@ -115,9 +115,19 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   // Filter & sort products
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      // Category filter
-      if (selectedCategory !== 'all' && p.category !== selectedCategory) {
-        return false;
+      // Category filter - flexible matching for admin-added products
+      if (selectedCategory !== 'all') {
+        const pCat = (p.category || '').toLowerCase().trim();
+        const sCat = selectedCategory.toLowerCase().trim();
+        const matches = 
+          pCat === sCat ||
+          (sCat === 'cloth' && (pCat.includes('cloth') || pCat.includes('apparel') || pCat.includes('wear') || pCat.includes('tee') || pCat.includes('hoodie') || pCat === '1')) ||
+          (sCat === 'accessories' && (pCat.includes('access') || pCat.includes('part') || pCat.includes('apple') || pCat.includes('tool') || pCat.includes('screen') || pCat.includes('battery') || pCat === '2')) ||
+          (sCat === 'diffuser' && (pCat.includes('diffus') || pCat.includes('scent') || pCat.includes('oil') || pCat.includes('aroma') || pCat.includes('fragrance') || pCat === '3')) ||
+          (sCat === 'iphones' && (pCat.includes('iphone') || pCat.includes('phone') || pCat.includes('device') || pCat === '4'));
+        if (!matches) {
+          return false;
+        }
       }
 
       // Search query
@@ -157,6 +167,18 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
     });
   }, [products, selectedCategory, searchQuery, selectedSizes, selectedColors, selectedPriceRange, sortBy]);
 
+  const getCategoryCount = (catId: 'all' | 'cloth' | 'diffuser' | 'accessories' | 'iphones') => {
+    if (catId === 'all') return products.length;
+    return products.filter(p => {
+      const pCat = (p.category || '').toLowerCase().trim();
+      if (catId === 'cloth') return pCat === 'cloth' || pCat.includes('cloth') || pCat.includes('apparel') || pCat.includes('wear') || pCat.includes('tee') || pCat.includes('hoodie') || pCat === '1';
+      if (catId === 'accessories') return pCat === 'accessories' || pCat.includes('access') || pCat.includes('part') || pCat.includes('apple') || pCat.includes('tool') || pCat.includes('screen') || pCat.includes('battery') || pCat === '2';
+      if (catId === 'diffuser') return pCat === 'diffuser' || pCat.includes('diffus') || pCat.includes('scent') || pCat.includes('oil') || pCat.includes('aroma') || pCat.includes('fragrance') || pCat === '3';
+      if (catId === 'iphones') return pCat === 'iphones' || pCat.includes('iphone') || pCat.includes('phone') || pCat.includes('device') || pCat === '4';
+      return false;
+    }).length;
+  };
+
   return (
     <div className={`min-h-screen pb-20 animate-in fade-in duration-300 transition-colors ${
       isDark ? 'bg-black text-white' : 'bg-white text-slate-950'
@@ -188,53 +210,102 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => onSelectCategory('all')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedCategory === 'all'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                All Departments
+                <span>All Departments</span>
+                {products.length > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedCategory === 'all'
+                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {products.length}
+                  </span>
+                )}
               </button>
+
               <button
                 onClick={() => onSelectCategory('cloth')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedCategory === 'cloth'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                Clothing
+                <span>Clothing</span>
+                {getCategoryCount('cloth') > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedCategory === 'cloth'
+                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {getCategoryCount('cloth')}
+                  </span>
+                )}
               </button>
+
               <button
                 onClick={() => onSelectCategory('accessories')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedCategory === 'accessories'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                Apple Parts
+                <span>Apple Parts</span>
+                {getCategoryCount('accessories') > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedCategory === 'accessories'
+                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {getCategoryCount('accessories')}
+                  </span>
+                )}
               </button>
+
               <button
                 onClick={() => onSelectCategory('diffuser')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedCategory === 'diffuser'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                Diffusers
+                <span>Diffusers</span>
+                {getCategoryCount('diffuser') > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedCategory === 'diffuser'
+                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {getCategoryCount('diffuser')}
+                  </span>
+                )}
               </button>
+
               <button
                 onClick={() => onSelectCategory('iphones')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedCategory === 'iphones'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                iPhones
+                <span>iPhones</span>
+                {getCategoryCount('iphones') > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedCategory === 'iphones'
+                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {getCategoryCount('iphones')}
+                  </span>
+                )}
               </button>
             </div>
 

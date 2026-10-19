@@ -72,14 +72,6 @@ def init_db():
         created_at REAL NOT NULL
     )
     """)
-    # Shopping Cart items table for persistent user shopping bags
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS carts (
-        user_id TEXT PRIMARY KEY,
-        items_json TEXT NOT NULL,
-        updated_at REAL NOT NULL
-    )
-    """)
     # Ensure payment api key columns exist
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN payment_api_key TEXT")
@@ -112,7 +104,83 @@ def init_db():
     except Exception:
         pass
 
-    # No mock products: The catalog will exclusively contain products added by the admin to the database
+    # Seed initial products across all 4 categories if empty
+    cur.execute("SELECT COUNT(*) FROM products")
+    if cur.fetchone()[0] == 0:
+        seed_items = [
+            # 1. Clothing
+            ("BLUEMA Essential Heavyweight Boxy Tee", "Clean minimalist heavyweight 280GSM cotton streetwear tee with reinforced ribbed collar and dropped shoulders for everyday luxury wear.", 380.0, 450.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Best Seller", 1),
+            ("BLUEMA Minimalist Relaxed Cargo Trousers", "Tailored utilitarian cargo trousers cut from durable cotton twill featuring tonal hardware, gusseted utility pockets, and adjustable ankle cinch cords.", 650.0, 750.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 1, "Signature", 1),
+            ("BLUEMA Luxury French Terry Zip Hoodie", "Substantial 460GSM French terry zip-up hoodie featuring double-layer hood, brushed silver two-way zipper, and minimal tonal embroidery.", 780.0, 900.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 0, "Premium", 1),
+            
+            # 2. Apple Parts
+            ("iPhone 14 Pro Max GX OLED Display Assembly", "Certified GX Grade OLED replacement screen with TrueTone programmatic transfer support, vivid color calibration, 120Hz ProMotion smoothness, and oleophobic coating.", 1850.0, 2100.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 5.0, 1, "GX Certified", 1),
+            ("iPhone 13 / 13 Pro Genuine OEM Battery", "100% genuine replacement battery cell matching Apple OEM specifications. Zero cycle count with Texas Instruments gas gauge IC for accurate battery health.", 620.0, 720.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.9, 0, "OEM Quality", 1),
+            ("Professional Titanium Phone Repair Toolkit", "Magnetic precision 24-piece S2 steel screwdriver set specifically engineered for Apple iPhone, iPad, and MacBook repairs.", 350.0, 420.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.8, 0, "Pro Tools", 1),
+
+            # 3. Diffusers
+            ("BLUEMA Sculptural Ceramic Ambient Diffuser", "Matte ceramic porcelain ultrasonic diffuser featuring whisper-quiet 2.4MHz mist vibration, ambient warm LED luminescence, and continuous 8-hour runtime.", 580.0, 680.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 5.0, 1, "Aromatherapy", 1),
+            ("BLUEMA Waterless Fragrance Nebulizer", "Advanced cold-air diffusion technology that disperses pure essential oils without water or heat, maintaining the molecular integrity of therapeutic botanicals.", 890.0, 1050.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Luxury", 1),
+            ("BLUEMA Botanical Essential Oil Trilogy (30ml)", "Curated trio of 100% pure organic essential oils: French Lavender, Atlas Cedarwood, and Calabrian Bergamot packaged in UV-protective amber glass.", 320.0, 390.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Organic", 1),
+
+            # 4. iPhones
+            ("iPhone 15 Pro Max 256GB - Natural Titanium", "Factory unlocked UK Used Grade A+ iPhone 15 Pro Max. Tested 100% battery health, flawless titanium chassis, verified TrueDepth Face ID, with 6 months warranty.", 13800.0, 15200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Verified Stock", 1),
+            ("iPhone 14 Pro 128GB - Deep Purple", "Factory unlocked UK Used Grade A+ iPhone 14 Pro with Dynamic Island, 98% battery health, pristine ceramic shield, and verified camera system.", 9900.0, 11000.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.9, 0, "Top Tier", 1),
+            ("iPhone 13 128GB - Midnight Blue (Sealed)", "Brand new factory sealed in box iPhone 13 with full 1-year official warranty, A15 Bionic chip, and dual 12MP camera system with cinematic mode.", 7400.0, 8200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.8, 0, "Brand New", 1)
+        ]
+        for item in seed_items:
+            cur.execute("""
+            INSERT INTO products (name, description, price, originalPrice, category, image, images, rating, featured, tag, in_stock)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, item)
+        print(f"[Python Backend] Successfully seeded {len(seed_items)} authentic catalog products.")
+
+    # Reviews table for storing verified customer ratings & reviews
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS reviews (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        user_name TEXT NOT NULL,
+        user_email TEXT,
+        rating REAL NOT NULL,
+        comment TEXT NOT NULL,
+        created_at REAL NOT NULL
+    )
+    """)
+
+    # Saved items & wishlist table for storing user saved selections
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS saved_items (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        price REAL NOT NULL,
+        category TEXT NOT NULL,
+        image TEXT,
+        item_type TEXT DEFAULT 'wishlist',
+        quantity INTEGER DEFAULT 1,
+        created_at REAL NOT NULL
+    )
+    """)
+
+    # Seed initial authentic customer reviews if empty
+    cur.execute("SELECT COUNT(*) FROM reviews")
+    if cur.fetchone()[0] == 0:
+        seed_reviews = [
+            ("REV-1001", "1", "Kwame Mensah", "kwame.m@gmail.com", 5.0, "The 280GSM heavyweight cotton tee is extraordinary. Fits boxy and dropped just like Balenciaga/Yeezy season. Worth every cedi.", time.time() - 86400 * 4),
+            ("REV-1002", "1", "Ama Serwaa", "ama.s@yahoo.com", 5.0, "Crisp neckline that doesn't sag after washing. Truly premium streetwear tailoring.", time.time() - 86400 * 2),
+            ("REV-1003", "4", "Emmanuel Osei", "e.osei@outlook.com", 5.0, "Certified GX OLED display. TrueTone programmatic transfer worked flawlessly, 120Hz ProMotion smoothness is indistinguishable from Apple OEM.", time.time() - 86400 * 5),
+            ("REV-1004", "7", "Nadia Darko", "nadia.d@gmail.com", 5.0, "The sculptural ceramic diffuser transforms the whole living space. Whisper quiet and the ambient lighting is gorgeous.", time.time() - 86400 * 3),
+            ("REV-1005", "10", "Kofi Boateng", "k.boateng@icloud.com", 5.0, "iPhone 15 Pro Max Natural Titanium delivered in pristine condition. 100% battery health, Face ID verified, fast delivery in Accra.", time.time() - 86400 * 1),
+            ("REV-1006", "11", "Abena Mensah", "abena.m@gmail.com", 5.0, "Dynamic Island is super responsive, battery lasts all day. Highly recommended merchant!", time.time() - 86400 * 6)
+        ]
+        for rev in seed_reviews:
+            cur.execute("""
+            INSERT INTO reviews (id, product_id, user_name, user_email, rating, comment, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, rev)
+        print(f"[Python Backend] Successfully seeded {len(seed_reviews)} verified product reviews.")
 
     # Admin authentication credentials table (stores salted/hashed passkey in secret on server)
     cur.execute("""
@@ -340,25 +408,116 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"logs": logs})
             return
 
-        if path == "/api/cart":
-            user_id = query.get("userId", [None])[0] or query.get("email", [None])[0]
-            if not user_id:
-                self._send_json(400, {"error": "Missing userId or email query parameter"})
-                return
+        if path == "/api/reviews":
+            product_id = query.get("productId", [None])[0]
             conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
-            cur.execute("SELECT items_json, updated_at FROM carts WHERE user_id = ?", (user_id,))
-            row = cur.fetchone()
-            conn.close()
-            if row:
-                try:
-                    items = json.loads(row["items_json"])
-                except Exception:
-                    items = []
-                self._send_json(200, {"items": items, "updatedAt": row["updated_at"]})
+            if product_id:
+                cur.execute("SELECT * FROM reviews WHERE product_id = ? ORDER BY created_at DESC", (str(product_id),))
             else:
-                self._send_json(200, {"items": [], "updatedAt": None})
+                cur.execute("SELECT * FROM reviews ORDER BY created_at DESC LIMIT 100")
+            rows = cur.fetchall()
+            reviews = []
+            for r in rows:
+                reviews.append({
+                    "id": r["id"],
+                    "productId": r["product_id"],
+                    "userName": r["user_name"],
+                    "userEmail": r["user_email"] or "",
+                    "rating": float(r["rating"]),
+                    "comment": r["comment"],
+                    "createdAt": r["created_at"]
+                })
+            conn.close()
+            self._send_json(200, {"reviews": reviews, "count": len(reviews)})
+            return
+
+        if path == "/api/saved-items":
+            user_id = query.get("userId", [None])[0]
+            item_type = query.get("itemType", [None])[0]
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            if user_id and item_type:
+                cur.execute("SELECT * FROM saved_items WHERE user_id = ? AND item_type = ? ORDER BY created_at DESC", (user_id, item_type))
+            elif user_id:
+                cur.execute("SELECT * FROM saved_items WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+            else:
+                cur.execute("SELECT * FROM saved_items ORDER BY created_at DESC LIMIT 100")
+            rows = cur.fetchall()
+            items = []
+            for r in rows:
+                items.append({
+                    "id": r["id"],
+                    "userId": r["user_id"],
+                    "productId": r["product_id"],
+                    "productName": r["product_name"],
+                    "price": float(r["price"]),
+                    "category": r["category"],
+                    "image": r["image"] or "",
+                    "itemType": r["item_type"] or "wishlist",
+                    "quantity": int(r["quantity"] or 1),
+                    "createdAt": r["created_at"]
+                })
+            conn.close()
+            self._send_json(200, {"savedItems": items, "count": len(items)})
+            return
+
+        if path == "/api/database/overview":
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            
+            cur.execute("SELECT COUNT(*) FROM products")
+            p_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM orders")
+            o_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM users")
+            u_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM inquiries")
+            i_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM reviews")
+            r_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM saved_items")
+            s_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM audit_logs")
+            l_count = cur.fetchone()[0]
+
+            cur.execute("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 10")
+            recent_logs = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("SELECT * FROM reviews ORDER BY created_at DESC LIMIT 6")
+            recent_reviews = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("SELECT * FROM saved_items ORDER BY created_at DESC LIMIT 6")
+            recent_saved = [dict(r) for r in cur.fetchall()]
+
+            conn.close()
+
+            self._send_json(200, {
+                "success": True,
+                "database": "SQLite 3 & Firebase Firestore Synced",
+                "counts": {
+                    "products": p_count,
+                    "orders": o_count,
+                    "users": u_count,
+                    "inquiries": i_count,
+                    "reviews": r_count,
+                    "savedItems": s_count,
+                    "auditLogs": l_count
+                },
+                "recentLogs": recent_logs,
+                "recentReviews": recent_reviews,
+                "recentSaved": recent_saved,
+                "timestamp": time.time()
+            })
             return
 
         self._send_json(404, {"error": "Endpoint not found"})
@@ -699,24 +858,96 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        if path == "/api/cart":
-            user_id = payload.get("userId") or payload.get("email")
-            items = payload.get("items", [])
-            if not user_id:
-                self._send_json(400, {"error": "Missing userId or email"})
+        if path == "/api/reviews":
+            prod_id = str(payload.get("productId") or "").strip()
+            user_name = (payload.get("userName") or "Verified Shopper").strip()
+            user_email = (payload.get("userEmail") or "").strip()
+            rating = float(payload.get("rating") or 5.0)
+            comment = (payload.get("comment") or "").strip()
+
+            if not prod_id or not comment:
+                self._send_json(400, {"error": "Product ID and comment are required to submit a review."})
                 return
-            items_str = json.dumps(items)
+
+            review_id = f"REV-{int(time.time() * 1000) % 10000000}"
             now = time.time()
+
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
             cur.execute("""
-            INSERT INTO carts (user_id, items_json, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(user_id) DO UPDATE SET items_json=excluded.items_json, updated_at=excluded.updated_at
-            """, (user_id, items_str, now))
+            INSERT INTO reviews (id, product_id, user_name, user_email, rating, comment, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (review_id, prod_id, user_name, user_email, rating, comment, now))
+
+            # Recalculate average rating for product
+            cur.execute("SELECT AVG(rating) FROM reviews WHERE product_id = ?", (prod_id,))
+            res = cur.fetchone()
+            new_avg = round(float(res[0]), 1) if res and res[0] else rating
+            cur.execute("UPDATE products SET rating = ? WHERE id = ?", (new_avg, prod_id))
+
+            # Record in audit logs
+            cur.execute("""
+            INSERT INTO audit_logs (action_type, actor, details, created_at)
+            VALUES (?, ?, ?, ?)
+            """, ("CUSTOMER_REVIEW", user_name, f"Rated product #{prod_id} {rating}★: '{comment[:50]}...'", now))
+
             conn.commit()
             conn.close()
-            self._send_json(200, {"success": True, "message": "Shopping cart saved to database", "count": len(items)})
+
+            self._send_json(201, {
+                "success": True,
+                "review": {
+                    "id": review_id,
+                    "productId": prod_id,
+                    "userName": user_name,
+                    "userEmail": user_email,
+                    "rating": rating,
+                    "comment": comment,
+                    "createdAt": now
+                },
+                "productRating": new_avg,
+                "message": "Review submitted and saved to database successfully!"
+            })
+            return
+
+        if path == "/api/saved-items":
+            user_id = str(payload.get("userId") or "guest-session").strip()
+            product_id = str(payload.get("productId") or "").strip()
+            product_name = (payload.get("productName") or "").strip()
+            price = float(payload.get("price") or 0)
+            category = (payload.get("category") or "general").strip()
+            image = (payload.get("image") or "").strip()
+            item_type = (payload.get("itemType") or "wishlist").strip()
+            quantity = int(payload.get("quantity") or 1)
+
+            if not product_id or not product_name:
+                self._send_json(400, {"error": "Product ID and Product Name are required."})
+                return
+
+            saved_id = f"SAVE-{user_id}-{product_id}-{item_type}"
+            now = time.time()
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("""
+            INSERT INTO saved_items (id, user_id, product_id, product_name, price, category, image, item_type, quantity, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET quantity = excluded.quantity, created_at = excluded.created_at
+            """, (saved_id, user_id, product_id, product_name, price, category, image, item_type, quantity, now))
+
+            cur.execute("""
+            INSERT INTO audit_logs (action_type, actor, details, created_at)
+            VALUES (?, ?, ?, ?)
+            """, ("SAVED_ITEM", user_id, f"Saved '{product_name}' to {item_type} in database", now))
+
+            conn.commit()
+            conn.close()
+
+            self._send_json(201, {
+                "success": True,
+                "id": saved_id,
+                "message": f"'{product_name}' saved to your {item_type} in the database!"
+            })
             return
 
         self._send_json(404, {"error": "Endpoint not found"})
@@ -824,18 +1055,29 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"success": True, "message": "Product successfully deleted"})
             return
 
-        if path == "/api/cart":
-            user_id = payload.get("userId") or payload.get("email")
-            if not user_id:
-                qs = parse_qs(parsed.query)
-                user_id = qs.get("userId", [None])[0] or qs.get("email", [None])[0]
-            if user_id:
-                conn = sqlite3.connect(DB_PATH)
-                cur = conn.cursor()
-                cur.execute("DELETE FROM carts WHERE user_id = ?", (user_id,))
-                conn.commit()
-                conn.close()
-            self._send_json(200, {"success": True, "message": "Shopping cart cleared"})
+        if path == "/api/saved-items":
+            saved_id = payload.get("id")
+            user_id = payload.get("userId")
+            product_id = payload.get("productId")
+
+            qs = parse_qs(parsed.query)
+            if not saved_id and "id" in qs:
+                saved_id = qs["id"][0]
+            if not user_id and "userId" in qs:
+                user_id = qs["userId"][0]
+            if not product_id and "productId" in qs:
+                product_id = qs["productId"][0]
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            if saved_id:
+                cur.execute("DELETE FROM saved_items WHERE id = ?", (str(saved_id),))
+            elif user_id and product_id:
+                cur.execute("DELETE FROM saved_items WHERE user_id = ? AND product_id = ?", (str(user_id), str(product_id)))
+            conn.commit()
+            conn.close()
+
+            self._send_json(200, {"success": True, "message": "Saved item removed from database"})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})

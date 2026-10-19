@@ -40,7 +40,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   theme = 'light'
 }) => {
   const isDark = theme === 'dark';
-  const allImages = product?.images && product.images.length > 0 ? product.images : (product?.image ? [product.image] : []);
+  const fallbackCatImage = React.useMemo(() => {
+    if (!product) return '/src/assets/images/bluema_hero_banner_1791714201504.jpg';
+    const cat = (product.category || '').toLowerCase();
+    if (cat.includes('cloth')) return '/src/assets/images/bluema_clothing_cat_1791714217020.jpg';
+    if (cat.includes('access') || cat.includes('part') || cat.includes('apple')) return '/src/assets/images/bluema_apple_parts_1791714238180.jpg';
+    if (cat.includes('diffus') || cat.includes('scent')) return '/src/assets/images/bluema_diffuser_cat_1791714255504.jpg';
+    if (cat.includes('phone') || cat.includes('device')) return '/src/assets/images/bluema_iphones_cat_1791714272698.jpg';
+    return '/src/assets/images/bluema_hero_banner_1791714201504.jpg';
+  }, [product?.category]);
+
+  const rawImages = (product?.images && product.images.length > 0)
+    ? product.images.filter(img => img && img.trim())
+    : (product?.image && product.image.trim() ? [product.image] : []);
+  const allImages = rawImages.length > 0 ? rawImages : [fallbackCatImage];
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
