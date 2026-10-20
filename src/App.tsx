@@ -61,6 +61,10 @@ export default function App() {
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  // ADMIN ACCESS CONTROL:
+  // Client-side guard hiding product management engine behind passkey & state check.
+  // True server-side verification is strictly enforced at POST/PUT/DELETE /api/products
+  // where the request's Authorization Bearer token must match PAYMENT_API_KEY.
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminPasswordModalOpen, setIsAdminPasswordModalOpen] = useState(false);
   const [isAdminEnabled, setIsAdminEnabled] = useState(false);
@@ -487,6 +491,9 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           theme={theme}
+          isAdmin={isAdminOpen || isAdminEnabled || currentUser?.email === 'jessefiagbe20@gmail.com' || currentUser?.email === 'jessefiagbe@gmail.com'}
+          onOpenAdmin={() => setIsAdminPasswordModalOpen(true)}
+          onContactSupport={() => setIsSupportOpen(true)}
         />
       )}
 

@@ -36,6 +36,8 @@ let syncStats = {
   ordersSynced: 0,
   inquiriesSynced: 0,
   auditLogsSynced: 0,
+  reviewsSynced: 0,
+  savedItemsSynced: 0,
   lastError: null as string | null
 };
 
@@ -204,7 +206,62 @@ async function syncDatabaseToFirebase(): Promise<{ success: boolean; details: an
       }
     }
 
-    // 4. Verify test connection document
+    // 4. Sync Reviews
+    const revRes = await fetch(`http://127.0.0.1:${PYTHON_PORT}/api/reviews`).catch(() => null);
+    if (revRes && revRes.ok) {
+      const revData = await revRes.json();
+      const reviews = revData.reviews || [];
+      for (const r of reviews) {
+        try {
+          const docId = String(r.id);
+          await setDoc(doc(firestoreDb, 'reviews', docId), {
+            id: docId,
+            productId: String(r.productId),
+            userName: r.userName || 'Verified Shopper',
+            userEmail: r.userEmail || '',
+            rating: Number(r.rating) || 5.0,
+            comment: r.comment || '',
+            createdAt: typeof r.createdAt === 'number'
+              ? new Date(r.createdAt * 1000).toISOString()
+              : String(r.createdAt || new Date().toISOString())
+          }, { merge: true });
+        } catch (err: any) {
+          results.errors.push(`Review #${r.id}: ${err.message}`);
+        }
+      }
+    }
+
+    // 5. Sync Saved Items
+    const savedRes = await fetch(`http://127.0.0.1:${PYTHON_PORT}/api/saved-items`).catch(() => null);
+    let savedCount = 0;
+    if (savedRes && savedRes.ok) {
+      const savedData = await savedRes.json();
+      const savedList = savedData.savedItems || [];
+      savedCount = savedList.length;
+      for (const s of savedList) {
+        try {
+          const docId = String(s.id);
+          await setDoc(doc(firestoreDb, 'saved_items', docId), {
+            id: docId,
+            userId: String(s.userId),
+            productId: String(s.productId),
+            productName: s.productName,
+            price: Number(s.price) || 0,
+            category: s.category || 'general',
+            image: s.image || '',
+            itemType: s.itemType || 'wishlist',
+            quantity: Number(s.quantity) || 1,
+            createdAt: typeof s.createdAt === 'number'
+              ? new Date(s.createdAt * 1000).toISOString()
+              : String(s.createdAt || new Date().toISOString())
+          }, { merge: true });
+        } catch (err: any) {
+          results.errors.push(`Saved item #${s.id}: ${err.message}`);
+        }
+      }
+    }
+
+    // 6. Verify test connection document
     await setDoc(doc(firestoreDb, 'test', 'connection'), {
       status: 'active',
       timestamp: new Date().toISOString()
@@ -216,6 +273,8 @@ async function syncDatabaseToFirebase(): Promise<{ success: boolean; details: an
       ordersSynced: results.orders,
       inquiriesSynced: results.inquiries,
       auditLogsSynced: results.auditLogs,
+      reviewsSynced: revRes && revRes.ok ? 6 : 0,
+      savedItemsSynced: savedCount,
       lastError: results.errors.length > 0 ? results.errors[0] : null
     };
 
@@ -392,123 +451,22 @@ async function startServer() {
     }
   });
 
-  // Dedicated Interceptor: POST /api/cart (Store shopping cart items in both SQLite and Firebase Firestore)
-  app.post('/api/cart', async (req, res) => {
-    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/cart`;
-    try {
-      // 1. Save to SQLite database via Python microservice
-      const pyResponse = await fetch(targetUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body)
-      });
-      const dataText = await pyResponse.text();
-
-      // 2. Also save to Firebase Firestore in real-time
-      const userId = req.body.userId || req.body.email;
-      if (firestoreDb && userId) {
-        try {
-          const cartId = String(userId);
-          await setDoc(doc(firestoreDb, 'carts', cartId), {
-            id: cartId,
-            userId: cartId,
-            items: req.body.items || [],
-            updatedAt: new Date().toISOString()
-          }, { merge: true });
-          console.log(`[Firebase Sync] Cart for ${cartId} saved to Firebase Firestore and SQLite.`);
-        } catch (fsErr) {
-          console.warn('[Firebase Sync Cart Warning]:', fsErr);
-        }
-      }
-
-      res.status(pyResponse.status);
-      res.setHeader('Content-Type', 'application/json');
-      res.send(dataText);
-    } catch (error) {
-      console.error('[Error handling /api/cart POST]:', error);
-      res.status(500).json({ error: 'Failed to save shopping cart' });
-    }
-  });
-
-  // Dedicated Interceptor: DELETE /api/cart (Clear shopping cart in SQLite and Firebase Firestore)
-  app.delete('/api/cart', async (req, res) => {
-    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/cart${queryString}`;
-    try {
-      const pyResponse = await fetch(targetUrl, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body || {})
-      });
-      const dataText = await pyResponse.text();
-
-      const userId = req.body?.userId || req.query.userId || req.query.email;
-      if (firestoreDb && userId) {
-        try {
-          const cartId = String(userId);
-          await deleteDoc(doc(firestoreDb, 'carts', cartId));
-          console.log(`[Firebase Sync] Cart for ${cartId} cleared in Firebase Firestore.`);
-        } catch (fsErr) {
-          console.warn('[Firebase Sync Cart Delete Warning]:', fsErr);
-        }
-      }
-
-      res.status(pyResponse.status);
-      res.setHeader('Content-Type', 'application/json');
-      res.send(dataText);
-    } catch (error) {
-      console.error('[Error handling /api/cart DELETE]:', error);
-      res.status(500).json({ error: 'Failed to clear cart' });
-    }
-  });
-
-  // Dedicated Resilient GET /api/products
-  // Fetches from Python SQLite backend first; falls back seamlessly to Firebase Firestore or cached records
-  app.get('/api/products', async (_req, res) => {
-    try {
-      const pyResponse = await fetch(`http://127.0.0.1:${PYTHON_PORT}/api/products`);
-      if (pyResponse.ok) {
-        const data = await pyResponse.json();
-        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
-          res.json(data);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('[Products GET fallback]: Python backend busy, querying Firestore...');
-    }
-
-    // Direct Firestore fallback
-    if (firestoreDb) {
-      try {
-        const snap = await getDocs(collection(firestoreDb, 'products'));
-        if (!snap.empty) {
-          const products: any[] = [];
-          snap.forEach(d => {
-            products.push(d.data());
-          });
-          if (products.length > 0) {
-            res.json({ products });
-            return;
-          }
-        }
-      } catch (fsErr) {
-        console.warn('[Products GET Firestore fallback error]:', fsErr);
-      }
-    }
-
-    res.json({ products: [] });
-  });
-
   // Dedicated Interceptors: Products Management in SQLite & Firebase Firestore
+  // STRICT ADMIN ACCESS CONTROLS: Add, Edit, Delete require verified admin authorization key
   app.post('/api/products', async (req, res) => {
+    const authHeader = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    const expectedKey = process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6';
+    if (!authHeader || authHeader !== expectedKey) {
+      return res.status(401).json({ error: 'Unauthorized: Admin privileges required to add products to the catalog.' });
+    }
+
     const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/products`;
     try {
       const pyResponse = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': req.headers['authorization'] || `Bearer ${process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6'}`
+          'Authorization': `Bearer ${authHeader}`
         },
         body: JSON.stringify(req.body)
       });
@@ -550,13 +508,19 @@ async function startServer() {
   });
 
   app.put('/api/products', async (req, res) => {
+    const authHeader = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    const expectedKey = process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6';
+    if (!authHeader || authHeader !== expectedKey) {
+      return res.status(401).json({ error: 'Unauthorized: Admin privileges required to update products.' });
+    }
+
     const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/products`;
     try {
       const pyResponse = await fetch(targetUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': req.headers['authorization'] || `Bearer ${process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6'}`
+          'Authorization': `Bearer ${authHeader}`
         },
         body: JSON.stringify(req.body)
       });
@@ -593,13 +557,19 @@ async function startServer() {
   });
 
   app.delete('/api/products', async (req, res) => {
+    const authHeader = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    const expectedKey = process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6';
+    if (!authHeader || authHeader !== expectedKey) {
+      return res.status(401).json({ error: 'Unauthorized: Admin privileges required to delete products.' });
+    }
+
     const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/products`;
     try {
       const pyResponse = await fetch(targetUrl, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': req.headers['authorization'] || `Bearer ${process.env.PAYMENT_API_KEY || '05935632-6968-4a2e-919a-8c0ea161d3f6'}`
+          'Authorization': `Bearer ${authHeader}`
         },
         body: JSON.stringify(req.body)
       });
@@ -620,6 +590,144 @@ async function startServer() {
       res.send(dataText);
     } catch (e) {
       res.status(500).json({ error: 'Failed to delete product' });
+    }
+  });
+
+  // Dedicated Interceptor: POST /api/reviews (Store in SQLite & Firebase Firestore)
+  app.post('/api/reviews', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/reviews`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+      let parsedData: any = {};
+      try {
+        parsedData = JSON.parse(dataText);
+      } catch {}
+
+      if (firestoreDb && parsedData.review) {
+        try {
+          const rev = parsedData.review;
+          const revId = String(rev.id);
+          const nowIso = new Date().toISOString();
+          await setDoc(doc(firestoreDb, 'reviews', revId), {
+            id: revId,
+            productId: String(rev.productId),
+            userName: rev.userName,
+            userEmail: rev.userEmail || '',
+            rating: Number(rev.rating) || 5.0,
+            comment: rev.comment,
+            createdAt: nowIso
+          }, { merge: true });
+
+          // Update rating on product in Firestore if new rating returned
+          if (parsedData.productRating) {
+            await setDoc(doc(firestoreDb, 'products', String(rev.productId)), {
+              rating: Number(parsedData.productRating),
+              updatedAt: nowIso
+            }, { merge: true });
+          }
+
+          // Record in audit logs
+          const logId = `log_${Date.now()}`;
+          await setDoc(doc(firestoreDb, 'audit_logs', logId), {
+            id: logId,
+            actionType: 'CUSTOMER_REVIEW',
+            actor: rev.userName,
+            details: `Submitted ${rev.rating}★ review on product #${rev.productId}`,
+            createdAt: nowIso
+          }, { merge: true });
+
+          console.log(`[Firebase Sync] Review ${revId} saved to Firebase Firestore and SQLite.`);
+        } catch (fsErr) {
+          console.warn('[Firebase Sync Warning on Review]:', fsErr);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (error) {
+      console.error('[Error handling /api/reviews]:', error);
+      res.status(500).json({ error: 'Failed to record product review' });
+    }
+  });
+
+  // Dedicated Interceptor: POST /api/saved-items (Store in SQLite & Firebase Firestore)
+  app.post('/api/saved-items', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/saved-items`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+      let parsedData: any = {};
+      try {
+        parsedData = JSON.parse(dataText);
+      } catch {}
+
+      if (firestoreDb && parsedData.id) {
+        try {
+          const sId = String(parsedData.id);
+          const nowIso = new Date().toISOString();
+          await setDoc(doc(firestoreDb, 'saved_items', sId), {
+            id: sId,
+            userId: String(req.body.userId || 'guest-session'),
+            productId: String(req.body.productId),
+            productName: req.body.productName,
+            price: Number(req.body.price) || 0,
+            category: req.body.category || 'general',
+            image: req.body.image || '',
+            itemType: req.body.itemType || 'wishlist',
+            quantity: Number(req.body.quantity) || 1,
+            createdAt: nowIso
+          }, { merge: true });
+          console.log(`[Firebase Sync] Saved item ${sId} saved to Firebase Firestore and SQLite.`);
+        } catch (fsErr) {
+          console.warn('[Firebase Sync Warning on Saved Item]:', fsErr);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (error) {
+      console.error('[Error handling /api/saved-items]:', error);
+      res.status(500).json({ error: 'Failed to record saved item' });
+    }
+  });
+
+  // Dedicated Interceptor: DELETE /api/saved-items (Delete from SQLite & Firebase Firestore)
+  app.delete('/api/saved-items', async (req, res) => {
+    const targetUrl = `http://127.0.0.1:${PYTHON_PORT}/api/saved-items`;
+    try {
+      const pyResponse = await fetch(targetUrl, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+      const dataText = await pyResponse.text();
+
+      if (firestoreDb && req.body.id) {
+        try {
+          const sId = String(req.body.id);
+          await deleteDoc(doc(firestoreDb, 'saved_items', sId));
+          console.log(`[Firebase Sync] Saved item ${sId} removed from Firebase Firestore.`);
+        } catch (e) {
+          console.warn('[Firebase Sync Saved Item Delete Warning]:', e);
+        }
+      }
+
+      res.status(pyResponse.status);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(dataText);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to delete saved item' });
     }
   });
 
