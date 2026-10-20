@@ -352,7 +352,7 @@ export default function App() {
       const res = await fetch('/api/products');
       if (res.ok) {
         const data = await res.json();
-        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+        if (Array.isArray(data.products)) {
           setProducts(data.products);
           return;
         }
@@ -366,16 +366,11 @@ export default function App() {
       const { collection, getDocs } = await import('firebase/firestore');
       const { db } = await import('./firebase');
       const querySnap = await getDocs(collection(db, 'products'));
-      if (!querySnap.empty) {
-        const firestoreProducts: Product[] = [];
-        querySnap.forEach(docSnap => {
-          firestoreProducts.push(docSnap.data() as Product);
-        });
-        if (firestoreProducts.length > 0) {
-          setProducts(firestoreProducts);
-          return;
-        }
-      }
+      const firestoreProducts: Product[] = [];
+      querySnap.forEach(docSnap => {
+        firestoreProducts.push(docSnap.data() as Product);
+      });
+      setProducts(firestoreProducts);
     } catch (fsErr) {
       console.warn('[Products] Firestore fallback note:', fsErr);
     }
@@ -383,6 +378,30 @@ export default function App() {
 
   useEffect(() => {
     fetchProducts();
+
+    // Real-time listener: immediately reflects any product created, updated, or deleted
+    let unsubscribe: (() => void) | undefined;
+    import('firebase/firestore').then(({ collection, onSnapshot }) => {
+      import('./firebase').then(({ db }) => {
+        try {
+          unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+            const liveProducts: Product[] = [];
+            snapshot.forEach(docSnap => {
+              liveProducts.push(docSnap.data() as Product);
+            });
+            setProducts(liveProducts);
+          }, (err) => {
+            console.warn('[Firestore Live Sync Note]:', err);
+          });
+        } catch (e) {
+          console.warn('[Firestore Real-time Note]:', e);
+        }
+      });
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Deep-link product resolution once products are loaded from database

@@ -103,37 +103,16 @@ def init_db():
         cur.execute("ALTER TABLE products ADD COLUMN images TEXT")
     except Exception:
         pass
+    for col in ["sizes", "colors", "specs", "storage"]:
+        try:
+            cur.execute(f"ALTER TABLE products ADD COLUMN {col} TEXT")
+        except Exception:
+            pass
 
-    # Seed initial products across all 4 categories if empty
-    cur.execute("SELECT COUNT(*) FROM products")
-    if cur.fetchone()[0] == 0:
-        seed_items = [
-            # 1. Clothing
-            ("BLUEMA Essential Heavyweight Boxy Tee", "Clean minimalist heavyweight 280GSM cotton streetwear tee with reinforced ribbed collar and dropped shoulders for everyday luxury wear.", 380.0, 450.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Best Seller", 1),
-            ("BLUEMA Minimalist Relaxed Cargo Trousers", "Tailored utilitarian cargo trousers cut from durable cotton twill featuring tonal hardware, gusseted utility pockets, and adjustable ankle cinch cords.", 650.0, 750.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 1, "Signature", 1),
-            ("BLUEMA Luxury French Terry Zip Hoodie", "Substantial 460GSM French terry zip-up hoodie featuring double-layer hood, brushed silver two-way zipper, and minimal tonal embroidery.", 780.0, 900.0, "cloth", "/src/assets/images/bluema_clothing_cat_1791714217020.jpg", json.dumps(["/src/assets/images/bluema_clothing_cat_1791714217020.jpg"]), 4.9, 0, "Premium", 1),
-            
-            # 2. Apple Parts
-            ("iPhone 14 Pro Max GX OLED Display Assembly", "Certified GX Grade OLED replacement screen with TrueTone programmatic transfer support, vivid color calibration, 120Hz ProMotion smoothness, and oleophobic coating.", 1850.0, 2100.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 5.0, 1, "GX Certified", 1),
-            ("iPhone 13 / 13 Pro Genuine OEM Battery", "100% genuine replacement battery cell matching Apple OEM specifications. Zero cycle count with Texas Instruments gas gauge IC for accurate battery health.", 620.0, 720.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.9, 0, "OEM Quality", 1),
-            ("Professional Titanium Phone Repair Toolkit", "Magnetic precision 24-piece S2 steel screwdriver set specifically engineered for Apple iPhone, iPad, and MacBook repairs.", 350.0, 420.0, "accessories", "/src/assets/images/bluema_apple_parts_1791714238180.jpg", json.dumps(["/src/assets/images/bluema_apple_parts_1791714238180.jpg"]), 4.8, 0, "Pro Tools", 1),
 
-            # 3. Diffusers
-            ("BLUEMA Sculptural Ceramic Ambient Diffuser", "Matte ceramic porcelain ultrasonic diffuser featuring whisper-quiet 2.4MHz mist vibration, ambient warm LED luminescence, and continuous 8-hour runtime.", 580.0, 680.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 5.0, 1, "Aromatherapy", 1),
-            ("BLUEMA Waterless Fragrance Nebulizer", "Advanced cold-air diffusion technology that disperses pure essential oils without water or heat, maintaining the molecular integrity of therapeutic botanicals.", 890.0, 1050.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Luxury", 1),
-            ("BLUEMA Botanical Essential Oil Trilogy (30ml)", "Curated trio of 100% pure organic essential oils: French Lavender, Atlas Cedarwood, and Calabrian Bergamot packaged in UV-protective amber glass.", 320.0, 390.0, "diffuser", "/src/assets/images/bluema_diffuser_cat_1791714255504.jpg", json.dumps(["/src/assets/images/bluema_diffuser_cat_1791714255504.jpg"]), 4.9, 0, "Organic", 1),
 
-            # 4. iPhones
-            ("iPhone 15 Pro Max 256GB - Natural Titanium", "Factory unlocked UK Used Grade A+ iPhone 15 Pro Max. Tested 100% battery health, flawless titanium chassis, verified TrueDepth Face ID, with 6 months warranty.", 13800.0, 15200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg", "/src/assets/images/bluema_hero_banner_1791714201504.jpg"]), 5.0, 1, "Verified Stock", 1),
-            ("iPhone 14 Pro 128GB - Deep Purple", "Factory unlocked UK Used Grade A+ iPhone 14 Pro with Dynamic Island, 98% battery health, pristine ceramic shield, and verified camera system.", 9900.0, 11000.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.9, 0, "Top Tier", 1),
-            ("iPhone 13 128GB - Midnight Blue (Sealed)", "Brand new factory sealed in box iPhone 13 with full 1-year official warranty, A15 Bionic chip, and dual 12MP camera system with cinematic mode.", 7400.0, 8200.0, "iphones", "/src/assets/images/bluema_iphones_cat_1791714272698.jpg", json.dumps(["/src/assets/images/bluema_iphones_cat_1791714272698.jpg"]), 4.8, 0, "Brand New", 1)
-        ]
-        for item in seed_items:
-            cur.execute("""
-            INSERT INTO products (name, description, price, originalPrice, category, image, images, rating, featured, tag, in_stock)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, item)
-        print(f"[Python Backend] Successfully seeded {len(seed_items)} authentic catalog products.")
+    # Inventory is intentionally empty by default until admin adds products
+    print("[Python Backend] Storefront inventory is clean and ready for admin product upload.")
 
     # Reviews table for storing verified customer ratings & reviews
     cur.execute("""
@@ -278,6 +257,34 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
                 if not images_list and r["image"]:
                     images_list = [r["image"]]
 
+                sizes_list = []
+                try:
+                    if "sizes" in r.keys() and r["sizes"]:
+                        sizes_list = json.loads(r["sizes"]) if isinstance(r["sizes"], str) else r["sizes"]
+                except Exception:
+                    pass
+
+                colors_list = []
+                try:
+                    if "colors" in r.keys() and r["colors"]:
+                        colors_list = json.loads(r["colors"]) if isinstance(r["colors"], str) else r["colors"]
+                except Exception:
+                    pass
+
+                specs_list = []
+                try:
+                    if "specs" in r.keys() and r["specs"]:
+                        specs_list = json.loads(r["specs"]) if isinstance(r["specs"], str) else r["specs"]
+                except Exception:
+                    pass
+
+                storage_list = []
+                try:
+                    if "storage" in r.keys() and r["storage"]:
+                        storage_list = json.loads(r["storage"]) if isinstance(r["storage"], str) else r["storage"]
+                except Exception:
+                    pass
+
                 products.append({
                     "id": r["id"],
                     "name": r["name"],
@@ -291,7 +298,11 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
                     "featured": bool(r["featured"]),
                     "tag": r["tag"],
                     "in_stock": is_in_stock,
-                    "inStock": bool(is_in_stock)
+                    "inStock": bool(is_in_stock),
+                    "sizes": sizes_list,
+                    "colors": colors_list,
+                    "specs": specs_list,
+                    "storage": storage_list
                 })
             conn.close()
             self._send_json(200, {"products": products})
@@ -815,14 +826,20 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             description = payload.get("description") or ""
             rating = float(payload.get("rating") if payload.get("rating") is not None else 5.0)
             in_stock = int(payload.get("in_stock", 1))
+            original_price = float(payload.get("originalPrice")) if payload.get("originalPrice") is not None else None
+            tag = payload.get("tag") or ""
+            sizes_json = json.dumps(payload.get("sizes") or [])
+            colors_json = json.dumps(payload.get("colors") or [])
+            specs_json = json.dumps(payload.get("specs") or [])
+            storage_json = json.dumps(payload.get("storage") or [])
             now = time.time()
             
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
             cur.execute("""
-            INSERT INTO products (name, description, price, category, image, images, rating, in_stock) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (name, description, price, category, image, images_json, rating, in_stock))
+            INSERT INTO products (name, description, price, originalPrice, category, image, images, rating, tag, in_stock, sizes, colors, specs, storage) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (name, description, price, original_price, category, image, images_json, rating, tag, in_stock, sizes_json, colors_json, specs_json, storage_json))
             new_id = cur.lastrowid
             cur.execute("""
             INSERT INTO audit_logs (action_type, actor, details, created_at)
@@ -986,15 +1003,21 @@ class VerifiedRequestHandler(BaseHTTPRequestHandler):
             description = payload.get("description") or ""
             rating = float(payload.get("rating") if payload.get("rating") is not None else 5.0)
             in_stock = int(payload.get("in_stock", 1))
+            original_price = float(payload.get("originalPrice")) if payload.get("originalPrice") is not None else None
+            tag = payload.get("tag") or ""
+            sizes_json = json.dumps(payload.get("sizes") or [])
+            colors_json = json.dumps(payload.get("colors") or [])
+            specs_json = json.dumps(payload.get("specs") or [])
+            storage_json = json.dumps(payload.get("storage") or [])
 
             now = time.time()
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
             cur.execute("""
             UPDATE products 
-            SET name=?, description=?, price=?, category=?, image=?, images=?, rating=?, in_stock=? 
+            SET name=?, description=?, price=?, originalPrice=?, category=?, image=?, images=?, rating=?, tag=?, in_stock=?, sizes=?, colors=?, specs=?, storage=? 
             WHERE id=?
-            """, (name, description, price, category, image, images_json, rating, in_stock, product_id))
+            """, (name, description, price, original_price, category, image, images_json, rating, tag, in_stock, sizes_json, colors_json, specs_json, storage_json, product_id))
             cur.execute("""
             INSERT INTO audit_logs (action_type, actor, details, created_at)
             VALUES (?, ?, ?, ?)

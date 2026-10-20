@@ -186,10 +186,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
       const payload = {
         ...product,
         price: parseFloat(product.price) || 0,
+        originalPrice: product.originalPrice ? parseFloat(product.originalPrice) : null,
         image: primaryImage,
         images: imagesList,
         rating: product.rating !== undefined ? parseFloat(product.rating) : 5.0,
-        in_stock: product.in_stock ? 1 : 0
+        in_stock: product.in_stock ? 1 : 0,
+        sizes: product.sizes || (product.category === 'cloth' ? ['S', 'M', 'L', 'XL', 'XXL'] : []),
+        colors: product.colors || (product.category === 'cloth' ? ['Black', 'White', 'Navy'] : []),
+        specs: product.specs || [],
+        storage: product.storage || []
       };
 
       const method = product.id ? 'PUT' : 'POST';
@@ -697,6 +702,75 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                       </div>
                     </div>
 
+                    {/* Sizes Selector (especially for Clothing) */}
+                    {editingProduct.category === 'cloth' && (
+                      <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-300">Available Clothing Sizes:</span>
+                          <span className="text-[10px] text-slate-400">Click to toggle sizes</span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {['S', 'M', 'L', 'XL', 'XXL'].map(sz => {
+                            const currentSizes: string[] = editingProduct.sizes || ['S', 'M', 'L', 'XL', 'XXL'];
+                            const isSelected = currentSizes.includes(sz);
+                            return (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => {
+                                  const next = isSelected 
+                                    ? currentSizes.filter((s: string) => s !== sz) 
+                                    : [...currentSizes, sz];
+                                  setEditingProduct({ ...editingProduct, sizes: next });
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                  isSelected 
+                                    ? 'bg-white text-slate-950 border-white shadow-xs' 
+                                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Colours Selector */}
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300">Available Colours & Shades:</span>
+                        <span className="text-[10px] text-slate-400">Click to toggle colours for this item</span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {['Black', 'Charcoal', 'Navy', 'White', 'Cream', 'Olive', 'Natural Titanium', 'Deep Purple'].map(col => {
+                          const currentColors: string[] = editingProduct.colors || [];
+                          const isSelected = currentColors.includes(col);
+                          return (
+                            <button
+                              key={col}
+                              type="button"
+                              onClick={() => {
+                                const next = isSelected 
+                                  ? currentColors.filter((c: string) => c !== col) 
+                                  : [...currentColors, col];
+                                setEditingProduct({ ...editingProduct, colors: next });
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                isSelected 
+                                  ? 'bg-white text-slate-950 border-white shadow-xs' 
+                                  : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
+                              }`}
+                            >
+                              {isSelected && <span>✓</span>}
+                              <span>{col}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     {((editingProduct.images && editingProduct.images.length > 0) || editingProduct.image) && (
                       <div className="mt-2 p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                         <span className="text-xs font-bold text-slate-300 block">Uploaded Product Images ({ (editingProduct.images || [editingProduct.image]).length })</span>
@@ -810,13 +884,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                             <span className="text-[10px] text-slate-400 uppercase tracking-wider">{product.category}</span>
                           </div>
                         </div>
-                        <button
-                          onClick={() => setEditingProduct(product)}
-                          className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors cursor-pointer shrink-0"
-                          title="Edit product"
-                        >
-                          <Edit2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setEditingProduct(product)}
+                            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors cursor-pointer"
+                            title="Edit product"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingProduct(product);
+                              setShowDeleteConfirm(true);
+                            }}
+                            className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-xl transition-colors cursor-pointer"
+                            title="Delete this item from website"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -829,7 +915,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
               <div className="space-y-6 animate-in fade-in duration-200">
                 <div>
                   <h1 className="text-2xl font-black text-white">Department Categories</h1>
-                  <p className="text-xs text-slate-400 mt-1">Official departments configured for BLUEMA HUB catalog.</p>
+                  <p className="text-xs text-slate-400 mt-1">Official departments configured for BLUEMA HUB catalog. Add or manage items in any department.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -839,14 +925,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                     { id: 'diffuser', name: '3. Diffusers & Scents', count: `${products.filter(p => p.category === 'diffuser').length} items`, status: 'Active' },
                     { id: 'iphones', name: '4. iPhones & Devices', count: `${products.filter(p => p.category === 'iphones').length} items`, status: 'Active' },
                   ].map(cat => (
-                    <div key={cat.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-md">
-                      <div>
-                        <h3 className="font-bold text-white text-sm">{cat.name}</h3>
-                        <span className="text-xs text-slate-400 mt-0.5 block font-mono">{cat.count}</span>
+                    <div key={cat.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-bold text-white text-sm">{cat.name}</h3>
+                          <span className="text-xs text-slate-400 mt-0.5 block font-mono">{cat.count}</span>
+                        </div>
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-bold">
+                          {cat.status}
+                        </span>
                       </div>
-                      <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-bold">
-                        {cat.status}
-                      </span>
+                      <div className="flex gap-2 pt-2 border-t border-slate-800">
+                        <button
+                          onClick={() => {
+                            setActiveTab('products');
+                            setProductCategoryFilter(cat.id as any);
+                            setEditingProduct({
+                              name: '',
+                              price: '',
+                              category: cat.id,
+                              rating: 5.0,
+                              in_stock: 1,
+                              sizes: cat.id === 'cloth' ? ['S', 'M', 'L', 'XL', 'XXL'] : [],
+                              colors: cat.id === 'cloth' ? ['Black', 'White', 'Navy'] : []
+                            });
+                          }}
+                          className="flex-1 py-2 px-3 bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Plus size={14} />
+                          <span>Add to this Dept</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActiveTab('products');
+                            setProductCategoryFilter(cat.id as any);
+                          }}
+                          className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                        >
+                          View Items
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

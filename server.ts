@@ -491,6 +491,10 @@ async function startServer() {
             rating: Number(req.body.rating) || 5.0,
             tag: req.body.tag || '',
             inStock: Boolean(req.body.in_stock ?? req.body.inStock ?? true),
+            sizes: req.body.sizes || [],
+            colors: req.body.colors || [],
+            specs: req.body.specs || [],
+            storage: req.body.storage || [],
             updatedAt: new Date().toISOString()
           }, { merge: true });
           console.log(`[Firebase Sync] Product #${pId} saved to Firebase Firestore and SQLite.`);
@@ -541,6 +545,10 @@ async function startServer() {
             rating: Number(req.body.rating) || 5.0,
             tag: req.body.tag || '',
             inStock: Boolean(req.body.in_stock ?? req.body.inStock ?? true),
+            sizes: req.body.sizes || [],
+            colors: req.body.colors || [],
+            specs: req.body.specs || [],
+            storage: req.body.storage || [],
             updatedAt: new Date().toISOString()
           }, { merge: true });
         } catch (e) {
