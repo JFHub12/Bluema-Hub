@@ -45,17 +45,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return '#64748b';
   };
 
-  const productImgSrc = React.useMemo(() => {
-    if (product.image && product.image.trim()) return product.image;
-    if (product.images && product.images.length > 0 && product.images[0]) return product.images[0];
-    const cat = (product.category || '').toLowerCase();
-    if (cat.includes('cloth')) return '/src/assets/images/bluema_clothing_cat_1791714217020.jpg';
-    if (cat.includes('access') || cat.includes('part') || cat.includes('apple')) return '/src/assets/images/bluema_apple_parts_1791714238180.jpg';
-    if (cat.includes('diffus') || cat.includes('scent')) return '/src/assets/images/bluema_diffuser_cat_1791714255504.jpg';
-    if (cat.includes('phone') || cat.includes('device')) return '/src/assets/images/bluema_iphones_cat_1791714272698.jpg';
-    return '/src/assets/images/bluema_hero_banner_1791714201504.jpg';
-  }, [product.image, product.images, product.category]);
-
   return (
     <div 
       onClick={() => onQuickView(product)}
@@ -64,7 +53,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-slate-100/70 dark:bg-slate-950 flex items-center justify-center p-3 sm:p-4">
         <img
-          src={productImgSrc}
+          src={product.image}
           alt={product.name}
           className="w-full h-full object-cover rounded-none sm:rounded-xl group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"

@@ -318,103 +318,35 @@
       },
       "required": ["status"]
     },
-    "Review": {
-      "title": "Review",
-      "description": "Customer product review and rating stored in database",
+    "Cart": {
+      "title": "Cart",
+      "description": "Persistent shopping cart storing user shopping items in Firestore and SQLite",
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique review identifier",
-          "maxLength": 64
-        },
-        "productId": {
-          "type": "string",
-          "description": "ID of product reviewed",
-          "maxLength": 64
-        },
-        "userName": {
-          "type": "string",
-          "description": "Name of reviewer",
-          "maxLength": 100
-        },
-        "userEmail": {
-          "type": "string",
-          "description": "Reviewer email address",
-          "maxLength": 150
-        },
-        "rating": {
-          "type": "number",
-          "description": "Star rating from 1 to 5"
-        },
-        "comment": {
-          "type": "string",
-          "description": "Review comments and feedback text",
-          "maxLength": 2000
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Submission timestamp",
-          "maxLength": 50
-        }
-      },
-      "required": ["id", "productId", "userName", "rating", "comment", "createdAt"]
-    },
-    "SavedItem": {
-      "title": "SavedItem",
-      "description": "Customer wishlist or saved product selection stored in database",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique saved item record ID",
-          "maxLength": 64
+          "description": "User identifier or email key",
+          "maxLength": 128
         },
         "userId": {
           "type": "string",
-          "description": "Customer user identifier or session key",
+          "description": "User account ID",
           "maxLength": 128
         },
-        "productId": {
+        "items": {
+          "type": "array",
+          "description": "Shopping bag items array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "updatedAt": {
           "type": "string",
-          "description": "Referenced product SKU or identifier",
-          "maxLength": 64
-        },
-        "productName": {
-          "type": "string",
-          "description": "Name of saved product",
-          "maxLength": 150
-        },
-        "price": {
-          "type": "number",
-          "description": "Product price in GHS"
-        },
-        "category": {
-          "type": "string",
-          "description": "Category of product",
-          "maxLength": 60
-        },
-        "image": {
-          "type": "string",
-          "description": "Product display thumbnail URL",
-          "maxLength": 500
-        },
-        "itemType": {
-          "type": "string",
-          "description": "Type of saved record: wishlist or cart",
-          "maxLength": 30
-        },
-        "quantity": {
-          "type": "number",
-          "description": "Quantity saved"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of save action",
+          "description": "Last updated ISO timestamp",
           "maxLength": 50
         }
       },
-      "required": ["id", "userId", "productId", "productName", "price", "createdAt"]
+      "required": ["id", "items"]
     }
   },
   "firestore": {
@@ -434,6 +366,10 @@
       "schema": "Order",
       "description": "Customer orders collection"
     },
+    "/carts/{cartId}": {
+      "schema": "Cart",
+      "description": "User shopping cart items collection"
+    },
     "/support_tickets/{ticketId}": {
       "schema": "SupportTicket",
       "description": "Customer support requests submitted to concierge desk"
@@ -441,14 +377,6 @@
     "/audit_logs/{logId}": {
       "schema": "AuditLog",
       "description": "Activity audit records for commerce and admin actions"
-    },
-    "/reviews/{reviewId}": {
-      "schema": "Review",
-      "description": "Customer product reviews and ratings collection"
-    },
-    "/saved_items/{itemId}": {
-      "schema": "SavedItem",
-      "description": "Customer saved items and wishlist collection"
     },
     "/test/{testId}": {
       "schema": "ConnectionTest",

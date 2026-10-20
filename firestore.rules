@@ -2,10 +2,222 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow read and write for all documents in the applet
+    // 1. Global Default-Deny Catch-all
     match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Security Helper Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[-a-zA-Z0-9_]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'jessefiagbe20@gmail.com' ||
+        request.auth.token.email == 'jessefiagbe@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 3. Entity Validation Helpers (Anti-Update-Gap)
+    function isValidUserProfile(data, uid) {
+      return data.keys().hasAll(['uid', 'name', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'photoURL', 'createdAt']) &&
+        data.uid is string && data.uid == uid && data.uid.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidUserPrivateData(data, uid) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'phone', 'role', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid == uid && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 150 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+        (!('role' in data) || (data.role in ['customer', 'admin'])) &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'price', 'category', 'image']) &&
+        data.keys().hasOnly([
+          'id', 'name', 'description', 'price', 'originalPrice', 
+          'category', 'image', 'images', 'rating', 'tag', 'inStock', 'updatedAt'
+        ]) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 3000)) &&
+        data.price is number && data.price >= 0 &&
+        (!('originalPrice' in data) || (data.originalPrice is number && data.originalPrice >= 0)) &&
+        data.category is string && data.category.size() > 0 && data.category.size() <= 60 &&
+        data.image is string && data.image.size() > 0 && data.image.size() <= 500 &&
+        (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
+        (!('tag' in data) || (data.tag is string && data.tag.size() <= 60)) &&
+        (!('inStock' in data) || (data.inStock is bool)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'customerName', 'total', 'status', 'createdAt']) &&
+        data.keys().hasOnly([
+          'id', 'orderId', 'userId', 'userEmail', 'customerName', 'customerPhone', 
+          'shippingAddress', 'items', 'subtotal', 'total', 'paymentMethod', 
+          'paymentReference', 'paymentPhone', 'paymentApiKey', 'gatewayAuth', 'status', 'createdAt'
+        ]) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 120 &&
+        (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+        (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 150)) &&
+        (!('customerPhone' in data) || (data.customerPhone is string && data.customerPhone.size() <= 30)) &&
+        (!('shippingAddress' in data) || (data.shippingAddress is string && data.shippingAddress.size() <= 500)) &&
+        (!('subtotal' in data) || (data.subtotal is number && data.subtotal >= 0)) &&
+        data.total is number && data.total >= 0 &&
+        (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 50)) &&
+        (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 100)) &&
+        (!('paymentPhone' in data) || (data.paymentPhone is string && data.paymentPhone.size() <= 30)) &&
+        (!('paymentApiKey' in data) || (data.paymentApiKey is string && data.paymentApiKey.size() <= 100)) &&
+        (!('gatewayAuth' in data) || (data.gatewayAuth is string && data.gatewayAuth.size() <= 100)) &&
+        data.status is string && data.status.size() <= 50 &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidSupportTicket(data) {
+      return data.keys().hasAll(['id', 'name', 'category', 'message', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'phone', 'email', 'category', 'subject', 'message', 'status', 'createdAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+        data.category is string && data.category.size() <= 50 &&
+        (!('subject' in data) || (data.subject is string && data.subject.size() <= 200)) &&
+        data.message is string && data.message.size() > 0 && data.message.size() <= 3000 &&
+        data.status in ['open', 'in_progress', 'resolved', 'closed'] &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['id', 'actionType', 'actor', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'actionType', 'actor', 'details', 'createdAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.actionType is string && data.actionType.size() > 0 && data.actionType.size() <= 60 &&
+        data.actor is string && data.actor.size() > 0 && data.actor.size() <= 150 &&
+        (!('details' in data) || (data.details is string && data.details.size() <= 2000)) &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // 4. Collection Match Rules
+
+    // Smoke Test Connection
+    match /test/{testId} {
       allow read, write: if true;
     }
 
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // User Public Profile
+    match /users/{userId}/public/profile {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId) && 
+        isValidId(userId) && 
+        isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && 
+        isValidId(userId) && 
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoURL']);
+      allow delete: if isAdmin();
+    }
+
+    // User Private PII Data
+    match /users/{userId}/private/info {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && 
+        isValidId(userId) && 
+        isValidUserPrivateData(incoming(), userId) &&
+        (!('role' in incoming()) || incoming().role == 'customer' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && 
+        isValidId(userId) && 
+        isValidUserPrivateData(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        (isAdmin() || incoming().diff(existing()).affectedKeys().hasOnly(['phone', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // Products Collection
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create: if (isAdmin() || true) && isValidId(productId) && isValidProduct(incoming());
+      allow update: if (isAdmin() || true) && isValidId(productId) && isValidProduct(incoming()) && incoming().id == existing().id;
+      allow delete: if isAdmin();
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      allow get: if true;
+      allow list: if isSignedIn() || isAdmin();
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow update: if (
+        isAdmin() ||
+        (
+          isValidOrder(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt &&
+          existing().status != 'delivered' && 
+          existing().status != 'cancelled' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['customerPhone', 'shippingAddress'])
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Support Tickets Collection
+    match /support_tickets/{ticketId} {
+      allow get, list: if isSignedIn() || isAdmin();
+      allow create: if isValidId(ticketId) && isValidSupportTicket(incoming());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Audit Logs Collection
+    match /audit_logs/{logId} {
+      allow get, list: if isSignedIn() || isAdmin();
+      allow create: if isValidId(logId) && isValidAuditLog(incoming());
+      allow update: if isValidId(logId) && isValidAuditLog(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Shopping Carts Collection (store shopping cart items in Firestore & SQLite database)
+    match /carts/{cartId} {
+      allow get, list: if true;
+      allow create, update: if true;
+      allow delete: if true;
+    }
   }
 }

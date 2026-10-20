@@ -378,21 +378,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                 Active Session: Merchant Administrator
               </span>
             </div>
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={onClose}
-                className="text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                Logout
-              </button>
-              <button
-                onClick={onClose}
-                className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-600 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-md group"
-                title="Close Admin Console"
-              >
-                <X size={16} className="group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
+            <button 
+              onClick={onClose}
+              className="text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              Logout
+            </button>
           </header>
 
           <div className="flex-1 p-8 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-slate-950/40 [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full">

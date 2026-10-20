@@ -14,9 +14,6 @@ interface CategoryViewProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   theme?: 'dark' | 'light';
-  onOpenAdmin?: () => void;
-  isAdmin?: boolean;
-  onContactSupport?: () => void;
 }
 
 export const CategoryView: React.FC<CategoryViewProps> = ({
@@ -27,10 +24,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   onAddToCart,
   searchQuery,
   onSearchChange,
-  theme = 'light',
-  onOpenAdmin,
-  isAdmin = false,
-  onContactSupport
+  theme = 'light'
 }) => {
   const isDark = theme === 'dark';
   // Filter states (Matching Blueprint Panel 2: Size, Colour, Price)
@@ -115,19 +109,9 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   // Filter & sort products
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      // Category filter - flexible matching for admin-added products
-      if (selectedCategory !== 'all') {
-        const pCat = (p.category || '').toLowerCase().trim();
-        const sCat = selectedCategory.toLowerCase().trim();
-        const matches = 
-          pCat === sCat ||
-          (sCat === 'cloth' && (pCat.includes('cloth') || pCat.includes('apparel') || pCat.includes('wear') || pCat.includes('tee') || pCat.includes('hoodie') || pCat === '1')) ||
-          (sCat === 'accessories' && (pCat.includes('access') || pCat.includes('part') || pCat.includes('apple') || pCat.includes('tool') || pCat.includes('screen') || pCat.includes('battery') || pCat === '2')) ||
-          (sCat === 'diffuser' && (pCat.includes('diffus') || pCat.includes('scent') || pCat.includes('oil') || pCat.includes('aroma') || pCat.includes('fragrance') || pCat === '3')) ||
-          (sCat === 'iphones' && (pCat.includes('iphone') || pCat.includes('phone') || pCat.includes('device') || pCat === '4'));
-        if (!matches) {
-          return false;
-        }
+      // Category filter
+      if (selectedCategory !== 'all' && p.category !== selectedCategory) {
+        return false;
       }
 
       // Search query
@@ -167,18 +151,6 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
     });
   }, [products, selectedCategory, searchQuery, selectedSizes, selectedColors, selectedPriceRange, sortBy]);
 
-  const getCategoryCount = (catId: 'all' | 'cloth' | 'diffuser' | 'accessories' | 'iphones') => {
-    if (catId === 'all') return products.length;
-    return products.filter(p => {
-      const pCat = (p.category || '').toLowerCase().trim();
-      if (catId === 'cloth') return pCat === 'cloth' || pCat.includes('cloth') || pCat.includes('apparel') || pCat.includes('wear') || pCat.includes('tee') || pCat.includes('hoodie') || pCat === '1';
-      if (catId === 'accessories') return pCat === 'accessories' || pCat.includes('access') || pCat.includes('part') || pCat.includes('apple') || pCat.includes('tool') || pCat.includes('screen') || pCat.includes('battery') || pCat === '2';
-      if (catId === 'diffuser') return pCat === 'diffuser' || pCat.includes('diffus') || pCat.includes('scent') || pCat.includes('oil') || pCat.includes('aroma') || pCat.includes('fragrance') || pCat === '3';
-      if (catId === 'iphones') return pCat === 'iphones' || pCat.includes('iphone') || pCat.includes('phone') || pCat.includes('device') || pCat === '4';
-      return false;
-    }).length;
-  };
-
   return (
     <div className={`min-h-screen pb-20 animate-in fade-in duration-300 transition-colors ${
       isDark ? 'bg-black text-white' : 'bg-white text-slate-950'
@@ -210,102 +182,53 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => onSelectCategory('all')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === 'all'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                <span>All Departments</span>
-                {products.length > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    selectedCategory === 'all'
-                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {products.length}
-                  </span>
-                )}
+                All Departments
               </button>
-
               <button
                 onClick={() => onSelectCategory('cloth')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === 'cloth'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                <span>Clothing</span>
-                {getCategoryCount('cloth') > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    selectedCategory === 'cloth'
-                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {getCategoryCount('cloth')}
-                  </span>
-                )}
+                Clothing
               </button>
-
               <button
                 onClick={() => onSelectCategory('accessories')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === 'accessories'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                <span>Apple Parts</span>
-                {getCategoryCount('accessories') > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    selectedCategory === 'accessories'
-                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {getCategoryCount('accessories')}
-                  </span>
-                )}
+                Apple Parts
               </button>
-
               <button
                 onClick={() => onSelectCategory('diffuser')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === 'diffuser'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                <span>Diffusers</span>
-                {getCategoryCount('diffuser') > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    selectedCategory === 'diffuser'
-                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {getCategoryCount('diffuser')}
-                  </span>
-                )}
+                Diffusers
               </button>
-
               <button
                 onClick={() => onSelectCategory('iphones')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === 'iphones'
                     ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
                 }`}
               >
-                <span>iPhones</span>
-                {getCategoryCount('iphones') > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    selectedCategory === 'iphones'
-                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {getCategoryCount('iphones')}
-                  </span>
-                )}
+                iPhones
               </button>
             </div>
 
@@ -460,70 +383,20 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
                 isDark ? 'bg-slate-900/50 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'
               }`}>
                 <CartAnimate size="md" />
-
-                {products.length === 0 ? (
-                  isAdmin ? (
-                    // Admin View: Information about adding products
-                    <div className="space-y-3">
-                      <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                        Catalog Ready For Admin Items
-                      </h3>
-                      <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        All mock items have been removed. Products will appear here immediately as you publish them from the Admin Console.
-                      </p>
-                      {onOpenAdmin && (
-                        <button
-                          onClick={onOpenAdmin}
-                          className={`mt-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                            isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
-                          }`}
-                        >
-                          Open Admin Console to Add Products
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    // Customer / User View: Warm and inviting message
-                    <div className="space-y-3">
-                      <h3 className={`text-lg sm:text-xl font-bold font-brand tracking-wide ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                        No Item Available. Come Again Later.
-                      </h3>
-                      <p className={`text-xs sm:text-sm max-w-md mx-auto leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                        We are currently preparing and curating our newest collection for you. Please check back with us soon, or reach out to our concierge desk for any inquiries.
-                      </p>
-                      {onContactSupport && (
-                        <div className="pt-2">
-                          <button
-                            onClick={onContactSupport}
-                            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                              isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-slate-950 hover:bg-black text-white'
-                            }`}
-                          >
-                            Contact Concierge & Support (059 883 0932)
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                ) : (
-                  // Filter Empty View: When products exist in store but filter returned 0
-                  <div className="space-y-3">
-                    <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                      No items match your filter
-                    </h3>
-                    <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Try selecting a different category or clearing active filters.
-                    </p>
-                    <button
-                      onClick={resetFilters}
-                      className={`mt-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                        isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
-                      }`}
-                    >
-                      Clear Filters / View All
-                    </button>
-                  </div>
-                )}
+                <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
+                  This department or category is currently empty
+                </h3>
+                <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  No items found in this section right now. Try exploring other departments or clearing active filters.
+                </p>
+                <button
+                  onClick={resetFilters}
+                  className={`mt-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
+                    isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
+                  }`}
+                >
+                  Clear Filters / View All
+                </button>
               </div>
             )}
           </main>

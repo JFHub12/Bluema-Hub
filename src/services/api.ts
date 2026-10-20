@@ -11,7 +11,8 @@ import {
 import { 
   doc, 
   setDoc, 
-  getDoc
+  getDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { 
   auth, 
@@ -62,47 +63,6 @@ export interface Order {
   gatewayAuth?: string;
   status: string;
   createdAt: number;
-}
-
-export interface Review {
-  id: string;
-  productId: string;
-  userName: string;
-  userEmail?: string;
-  rating: number;
-  comment: string;
-  createdAt: number;
-}
-
-export interface SavedItem {
-  id: string;
-  userId: string;
-  productId: string;
-  productName: string;
-  price: number;
-  category: string;
-  image?: string;
-  itemType: 'wishlist' | 'cart';
-  quantity: number;
-  createdAt: number;
-}
-
-export interface DatabaseOverview {
-  success: boolean;
-  database: string;
-  counts: {
-    products: number;
-    orders: number;
-    users: number;
-    inquiries: number;
-    reviews: number;
-    savedItems: number;
-    auditLogs: number;
-  };
-  recentLogs?: any[];
-  recentReviews?: Review[];
-  recentSaved?: SavedItem[];
-  timestamp: number;
 }
 
 export const BRAND_NAME = "BLUEMA HUB";
@@ -608,116 +568,71 @@ export const ApiService = {
     return { success: false, message: 'Sync request failed.' };
   },
 
-  /**
-   * Reviews & Customer Ratings stored in database
-   */
-  async getReviews(productId?: string): Promise<Review[]> {
+  async saveCart(userId: string, items: OrderItem[]): Promise<boolean> {
     try {
-      const url = productId ? `/api/reviews?productId=${encodeURIComponent(productId)}` : '/api/reviews';
-      const res = await fetch(url);
+      // 1. Persist to SQLite and server backend
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, items })
+      });
+
+      // 2. Client-side direct write to Firestore for offline caching
+      try {
+        await setDoc(doc(db, 'carts', userId), {
+          id: userId,
+          userId,
+          items,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {
+        console.warn('[Firestore Cart Client Sync Note]:', e);
+      }
+
+      return res.ok;
+    } catch (err) {
+      console.warn('[API saveCart Error]:', err);
+      return false;
+    }
+  },
+
+  async getCart(userId: string): Promise<OrderItem[]> {
+    try {
+      // Try backend first
+      const res = await fetch(`/api/cart?userId=${encodeURIComponent(userId)}`);
       if (res.ok) {
         const data = await res.json();
-        return data.reviews || [];
+        if (data.items && Array.isArray(data.items)) {
+          return data.items;
+        }
       }
-    } catch (e) {
-      console.warn('[API] Fetching reviews error:', e);
+
+      // Try Firestore fallback
+      const cartSnap = await getDoc(doc(db, 'carts', userId));
+      if (cartSnap.exists()) {
+        const d = cartSnap.data();
+        if (d && Array.isArray(d.items)) {
+          return d.items;
+        }
+      }
+    } catch (err) {
+      console.warn('[API getCart Error]:', err);
     }
     return [];
   },
 
-  async addReview(payload: {
-    productId: string;
-    userName: string;
-    userEmail?: string;
-    rating: number;
-    comment: string;
-  }): Promise<{ success: boolean; review?: Review; error?: string }> {
+  async clearCart(userId: string): Promise<boolean> {
     try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const res = await fetch(`/api/cart?userId=${encodeURIComponent(userId)}`, {
+        method: 'DELETE'
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        return { success: true, review: data.review };
-      }
-      return { success: false, error: data.error || 'Failed to submit review' };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Network error submitting review' };
-    }
-  },
-
-  /**
-   * Wishlist & Saved Items stored in database
-   */
-  async getSavedItems(userId: string = 'guest-session', itemType: string = 'wishlist'): Promise<SavedItem[]> {
-    try {
-      const url = `/api/saved-items?userId=${encodeURIComponent(userId)}&itemType=${encodeURIComponent(itemType)}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        return data.savedItems || [];
-      }
-    } catch (e) {
-      console.warn('[API] Fetching saved items error:', e);
-    }
-    return [];
-  },
-
-  async saveItem(payload: {
-    userId?: string;
-    productId: string;
-    productName: string;
-    price: number;
-    category?: string;
-    image?: string;
-    itemType?: 'wishlist' | 'cart';
-    quantity?: number;
-  }): Promise<{ success: boolean; id?: string; error?: string }> {
-    try {
-      const res = await fetch('/api/saved-items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        return { success: true, id: data.id };
-      }
-      return { success: false, error: data.error || 'Failed to save item' };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Network error saving item' };
-    }
-  },
-
-  async removeSavedItem(id: string): Promise<{ success: boolean }> {
-    try {
-      const res = await fetch('/api/saved-items', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
-      const data = await res.json();
-      return { success: Boolean(res.ok && data.success) };
+      try {
+        await deleteDoc(doc(db, 'carts', userId));
+      } catch {}
+      return res.ok;
     } catch {
-      return { success: false };
+      return false;
     }
-  },
-
-  /**
-   * Database Overview across all 6 tables / collections
-   */
-  async getDatabaseOverview(): Promise<DatabaseOverview | null> {
-    try {
-      const res = await fetch('/api/database/overview');
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      console.warn('[API] Database overview fetch note:', e);
-    }
-    return null;
   },
 
   _getLocalUsers(): any[] {
@@ -742,26 +657,5 @@ export const ApiService = {
     const orders = this._getLocalOrders();
     orders.unshift(order);
     localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(orders));
-  },
-
-  async saveCart(userId: string, items: any[]): Promise<void> {
-    try {
-      localStorage.setItem(`bluema_cart_${userId}`, JSON.stringify(items));
-    } catch {}
-  },
-
-  async getCart(userId: string): Promise<any[]> {
-    try {
-      const val = localStorage.getItem(`bluema_cart_${userId}`);
-      return val ? JSON.parse(val) : [];
-    } catch {
-      return [];
-    }
-  },
-
-  async clearCart(userId: string): Promise<void> {
-    try {
-      localStorage.removeItem(`bluema_cart_${userId}`);
-    } catch {}
   }
 };
