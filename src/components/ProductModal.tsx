@@ -29,6 +29,7 @@ interface ProductModalProps {
   onBuyNow: (product: Product, options: { size?: string; color?: string; storage?: string }) => void;
   onOpenPrivacy?: () => void;
   theme?: 'dark' | 'light';
+  onShowColorInCatalog?: (color: string) => void;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({
@@ -37,7 +38,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onAddToCart,
   onBuyNow,
   onOpenPrivacy,
-  theme = 'light'
+  theme = 'light',
+  onShowColorInCatalog
 }) => {
   const isDark = theme === 'dark';
   const fallbackCatImage = React.useMemo(() => {
@@ -490,6 +492,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                       );
                     })}
                   </div>
+
+                  {/* Show all clothing in this color CTA */}
+                  {onShowColorInCatalog && selectedColor && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onShowColorInCatalog(selectedColor);
+                          onClose();
+                        }}
+                        className={`text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                          isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-700 hover:text-emerald-800'
+                        }`}
+                      >
+                        <Tag className="w-3.5 h-3.5" />
+                        <span>Show all clothing available in {selectedColor} →</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

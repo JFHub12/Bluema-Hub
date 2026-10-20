@@ -71,7 +71,7 @@ export default function App() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [clothColorFilter, setClothColorFilter] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ show: boolean; success: boolean; message: string } | null>(null);
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -494,6 +494,8 @@ export default function App() {
           isAdmin={isAdminOpen || isAdminEnabled || currentUser?.email === 'jessefiagbe20@gmail.com' || currentUser?.email === 'jessefiagbe@gmail.com'}
           onOpenAdmin={() => setIsAdminPasswordModalOpen(true)}
           onContactSupport={() => setIsSupportOpen(true)}
+          initialColorFilter={clothColorFilter}
+          onClearInitialColorFilter={() => setClothColorFilter(null)}
         />
       )}
 
@@ -523,6 +525,11 @@ export default function App() {
           onBuyNow={(prod, opts) => handleAttemptAddToCart(prod, opts, true)}
           onOpenPrivacy={() => setIsPrivacyOpen(true)}
           theme={theme}
+          onShowColorInCatalog={(color) => {
+            setSelectedCategory('cloth');
+            setClothColorFilter(color);
+            handleNavigate('shop', 'cloth');
+          }}
         />
       )}
 

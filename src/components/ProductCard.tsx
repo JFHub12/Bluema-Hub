@@ -6,12 +6,18 @@ interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product, options?: { size?: string; color?: string; storage?: string }) => void;
   onQuickView: (product: Product) => void;
+  onSelectColorFilter?: (color: string) => void;
+  activeColorFilter?: string[];
+  isClothingDepartment?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onAddToCart,
-  onQuickView
+  onQuickView,
+  onSelectColorFilter,
+  activeColorFilter = [],
+  isClothingDepartment = false
 }) => {
   const [justAdded, setJustAdded] = useState(false);
   const [activeColor, setActiveColor] = useState<string | undefined>(
@@ -144,12 +150,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* Color Swatch Dots under Price (As seen in Blueprint Panel 2) */}
+        {/* Color Swatch Dots under Price (Matching Blueprint Panel 2 & Image Filters) */}
         {product.colors && product.colors.length > 0 && (
           <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {product.colors.slice(0, 5).map((color, idx) => {
                 const isSelected = activeColor === color;
+                const isFiltered = activeColorFilter.some(c => 
+                  c.toLowerCase() === color.toLowerCase() || 
+                  color.toLowerCase().includes(c.toLowerCase()) || 
+                  c.toLowerCase().includes(color.toLowerCase())
+                );
                 return (
                   <button
                     key={idx}
@@ -157,12 +168,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       setActiveColor(color);
+                      if (onSelectColorFilter) {
+                        onSelectColorFilter(color);
+                      }
                     }}
-                    className={`w-3.5 h-3.5 rounded-full border shadow-2xs inline-block transition-transform ${
-                      isSelected ? 'ring-2 ring-slate-950 dark:ring-white scale-110 border-white' : 'border-slate-300 dark:border-slate-700 hover:scale-110'
+                    className={`w-4 h-4 rounded-full border shadow-2xs inline-block transition-all cursor-pointer ${
+                      isFiltered
+                        ? 'ring-2 ring-emerald-500 scale-125 border-white shadow-md'
+                        : isSelected 
+                          ? 'ring-2 ring-slate-950 dark:ring-white scale-110 border-white' 
+                          : 'border-slate-300 dark:border-slate-700 hover:scale-125 hover:ring-1 hover:ring-slate-400'
                     }`}
                     style={{ backgroundColor: getColorStyle(color) }}
-                    title={color}
+                    title={isClothingDepartment ? `Click to show all clothing in ${color}` : color}
+                    aria-label={`Color: ${color}`}
                   />
                 );
               })}

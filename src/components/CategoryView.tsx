@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { SlidersHorizontal, X, RotateCcw, Search, ChevronDown, Check } from 'lucide-react';
-import { Product, CATEGORIES } from '../data/products';
+import React, { useState, useMemo, useEffect } from 'react';
+import { SlidersHorizontal, X, RotateCcw, Check, Sparkles } from 'lucide-react';
+import { Product } from '../data/products';
 import { ProductCard } from './ProductCard';
 import { BRAND_ASSETS } from '../assets/branding';
 import { CartAnimate } from './CartAnimate';
@@ -17,6 +17,8 @@ interface CategoryViewProps {
   onOpenAdmin?: () => void;
   isAdmin?: boolean;
   onContactSupport?: () => void;
+  initialColorFilter?: string | null;
+  onClearInitialColorFilter?: () => void;
 }
 
 export const CategoryView: React.FC<CategoryViewProps> = ({
@@ -30,26 +32,56 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   theme = 'light',
   onOpenAdmin,
   isAdmin = false,
-  onContactSupport
+  onContactSupport,
+  initialColorFilter,
+  onClearInitialColorFilter
 }) => {
   const isDark = theme === 'dark';
-  // Filter states (Matching Blueprint Panel 2: Size, Colour, Price)
+  const isClothing = selectedCategory === 'cloth';
+
+  // Filter states: only applicable when in clothing department
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Available filter options
+  // Available filter options matching user's image attachment precisely
   const AVAILABLE_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
   const AVAILABLE_COLORS = [
-    { name: 'Black', hex: '#111111' },
-    { name: 'Charcoal', hex: '#4b5563' },
-    { name: 'Navy', hex: '#1e293b' },
-    { name: 'White', hex: '#f8f8f8' },
-    { name: 'Cream', hex: '#e7dfd5' },
-    { name: 'Olive', hex: '#556b2f' },
+    { name: 'Black', hex: '#111111', aliases: ['black', 'onyx', 'obsidian', 'noir', 'dark'] },
+    { name: 'Charcoal', hex: '#455263', aliases: ['charcoal', 'slate', 'grey', 'gray', 'graphite', 'ash'] },
+    { name: 'Navy', hex: '#1d283a', aliases: ['navy', 'blue', 'midnight', 'marine', 'indigo'] },
+    { name: 'White', hex: '#ffffff', aliases: ['white', 'chalk', 'ivory', 'snow'] },
+    { name: 'Cream', hex: '#e4ddcc', aliases: ['cream', 'sand', 'beige', 'starlight', 'tan', 'oatmeal'] },
+    { name: 'Olive', hex: '#536830', aliases: ['olive', 'green', 'sage', 'army', 'khaki'] },
   ];
+
+  // Sync external initialColorFilter if provided (e.g. from ProductModal or link)
+  useEffect(() => {
+    if (initialColorFilter) {
+      const matched = AVAILABLE_COLORS.find(c => 
+        c.name.toLowerCase() === initialColorFilter.toLowerCase() ||
+        c.aliases.some(a => initialColorFilter.toLowerCase().includes(a))
+      );
+      if (matched) {
+        setSelectedColors([matched.name]);
+      } else {
+        setSelectedColors([initialColorFilter]);
+      }
+    }
+  }, [initialColorFilter]);
+
+  // When switching away from clothing, clear clothing-specific filters
+  useEffect(() => {
+    if (selectedCategory !== 'cloth') {
+      setSelectedSizes([]);
+      setSelectedColors([]);
+      setMobileFiltersOpen(false);
+      if (onClearInitialColorFilter) {
+        onClearInitialColorFilter();
+      }
+    }
+  }, [selectedCategory, onClearInitialColorFilter]);
 
   // Helper to get active category metadata
   const currentCategoryMeta = useMemo(() => {
@@ -95,22 +127,42 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
     );
   };
 
-  // Toggle color filter
-  const toggleColor = (color: string) => {
-    setSelectedColors(prev => 
-      prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]
+  // Toggle color filter (clicking a color swatch filters clothing by that color)
+  const toggleColor = (colorName: string) => {
+    setSelectedColors(prev => {
+      if (prev.includes(colorName)) {
+        return prev.filter(c => c !== colorName);
+      }
+      return [colorName]; // Focus view on all clothing in this color
+    });
+  };
+
+  // When user selects a cloth color from product card or modal
+  const handleSelectClothColor = (colorName: string) => {
+    const matched = AVAILABLE_COLORS.find(c => 
+      c.name.toLowerCase() === colorName.toLowerCase() ||
+      c.aliases.some(a => colorName.toLowerCase().includes(a))
     );
+    const target = matched ? matched.name : colorName;
+    setSelectedColors(prev => {
+      if (prev.includes(target)) {
+        return prev.filter(c => c !== target);
+      }
+      return [target]; // Immediately display all clothing in this color
+    });
   };
 
   // Reset all filters
   const resetFilters = () => {
     setSelectedSizes([]);
     setSelectedColors([]);
-    setSelectedPriceRange('all');
     onSearchChange('');
+    if (onClearInitialColorFilter) {
+      onClearInitialColorFilter();
+    }
   };
 
-  const hasActiveFilters = selectedSizes.length > 0 || selectedColors.length > 0 || selectedPriceRange !== 'all' || searchQuery.trim().length > 0;
+  const hasActiveFilters = selectedSizes.length > 0 || selectedColors.length > 0 || searchQuery.trim().length > 0;
 
   // Filter & sort products
   const filteredProducts = useMemo(() => {
@@ -138,25 +190,39 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
         if (!matchesName && !matchesDesc) return false;
       }
 
-      // Size filter (if applicable to product)
-      if (selectedSizes.length > 0) {
-        if (!p.sizes || !p.sizes.some(s => selectedSizes.includes(s))) {
-          return false;
+      // CLOTHING-ONLY FILTERS: Size & Colour
+      if (isClothing) {
+        // Size filter
+        if (selectedSizes.length > 0) {
+          if (!p.sizes || !p.sizes.some(s => selectedSizes.map(sz => sz.toUpperCase()).includes(s.toUpperCase()))) {
+            return false;
+          }
+        }
+
+        // Colour filter: when a user selects a cloth color, all clothing in that color will show
+        if (selectedColors.length > 0) {
+          if (!p.colors || p.colors.length === 0) {
+            return false;
+          }
+          const matchesColor = p.colors.some(prodCol => {
+            const pcLower = prodCol.toLowerCase().trim();
+            return selectedColors.some(sc => {
+              const scLower = sc.toLowerCase().trim();
+              if (pcLower === scLower || pcLower.includes(scLower) || scLower.includes(pcLower)) {
+                return true;
+              }
+              const def = AVAILABLE_COLORS.find(d => d.name.toLowerCase() === scLower);
+              if (def) {
+                return def.aliases.some(alias => pcLower.includes(alias));
+              }
+              return false;
+            });
+          });
+          if (!matchesColor) {
+            return false;
+          }
         }
       }
-
-      // Color filter
-      if (selectedColors.length > 0) {
-        if (!p.colors || !p.colors.some(c => selectedColors.some(sc => c.toLowerCase().includes(sc.toLowerCase())))) {
-          return false;
-        }
-      }
-
-      // Price range filter
-      if (selectedPriceRange === 'under-200' && p.price >= 200) return false;
-      if (selectedPriceRange === '200-500' && (p.price < 200 || p.price > 500)) return false;
-      if (selectedPriceRange === '500-2000' && (p.price < 500 || p.price > 2000)) return false;
-      if (selectedPriceRange === 'over-2000' && p.price <= 2000) return false;
 
       return true;
     }).sort((a, b) => {
@@ -165,7 +231,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
       if (sortBy === 'rating') return b.rating - a.rating;
       return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
     });
-  }, [products, selectedCategory, searchQuery, selectedSizes, selectedColors, selectedPriceRange, sortBy]);
+  }, [products, selectedCategory, isClothing, searchQuery, selectedSizes, selectedColors, sortBy]);
 
   const getCategoryCount = (catId: 'all' | 'cloth' | 'diffuser' | 'accessories' | 'iphones') => {
     if (catId === 'all') return products.length;
@@ -184,13 +250,12 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
       isDark ? 'bg-black text-white' : 'bg-white text-slate-950'
     }`}>
       
-      {/* 1. CATEGORY BANNER (Blueprint Panel 2: CLOTHING / Simple styles. Everyday wear.) */}
+      {/* 1. CATEGORY BANNER */}
       <section className="relative h-64 sm:h-72 overflow-hidden flex items-center justify-center border-b border-slate-200 dark:border-white/10">
         <div 
           className="absolute inset-0 z-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${currentCategoryMeta.bgImage})` }}
         />
-        {/* Crisp contrast overlay preserving complete background image visibility without white wash */}
         <div className="absolute inset-0 z-0 bg-black/45 backdrop-blur-[1px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center space-y-2">
@@ -309,126 +374,157 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
               </button>
             </div>
 
-            {/* Mobile Filter Toggle Button (< 1024px) */}
-            <button
-              onClick={() => setMobileFiltersOpen(true)}
-              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl shrink-0 cursor-pointer border border-slate-200 dark:border-slate-800"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>Filters {hasActiveFilters && `(${selectedSizes.length + selectedColors.length + (selectedPriceRange !== 'all' ? 1 : 0)})`}</span>
-            </button>
+            {/* Mobile Filter Toggle Button (ONLY SHOWN FOR CLOTHING DEPARTMENT) */}
+            {isClothing && (
+              <button
+                onClick={() => setMobileFiltersOpen(true)}
+                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl shrink-0 cursor-pointer border border-slate-200 dark:border-slate-800"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filters {hasActiveFilters && `(${selectedSizes.length + selectedColors.length})`}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 3. MAIN 2-COLUMN LAYOUT: FILTERS (LEFT) & PRODUCTS GRID (RIGHT) */}
+      {/* 3. MAIN LAYOUT: FILTERS SIDEBAR (ONLY ON CLOTHING) & PRODUCTS GRID */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className={isClothing ? "grid grid-cols-1 lg:grid-cols-4 gap-8" : "w-full space-y-6"}>
           
-          {/* LEFT COLUMN: FILTERS SIDEBAR (Matching Blueprint Panel 2) */}
-          <aside className="hidden lg:block lg:col-span-1 space-y-6 pr-4 border-r border-slate-200/80 dark:border-white/10 transition-colors">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-950 dark:text-white">
-                FILTERS
-              </h2>
-              {hasActiveFilters && (
-                <button
-                  onClick={resetFilters}
-                  className="text-xs text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white underline flex items-center gap-1 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset</span>
-                </button>
-              )}
-            </div>
-
-            {/* Size Filter Checkboxes */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Size
-              </h3>
-              <div className="space-y-2">
-                {AVAILABLE_SIZES.map(size => (
-                  <label 
-                    key={size}
-                    className="flex items-center gap-3 text-xs font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white cursor-pointer select-none"
+          {/* LEFT COLUMN: FILTERS SIDEBAR (EXACTLY MATCHING USER'S ATTACHED IMAGE - ONLY SHOWN ON CLOTHING) */}
+          {isClothing && (
+            <aside className="hidden lg:block lg:col-span-1 space-y-6 pr-6 border-r border-slate-200/80 dark:border-white/10 transition-colors select-none">
+              
+              {/* FILTERS Title Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+                <h2 className="text-base font-black uppercase tracking-wider text-slate-950 dark:text-white font-brand">
+                  FILTERS
+                </h2>
+                {hasActiveFilters && (
+                  <button
+                    onClick={resetFilters}
+                    className="text-xs text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white underline flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <input
-                      type="checkbox"
-                      checked={selectedSizes.includes(size)}
-                      onChange={() => toggleSize(size)}
-                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-slate-950 focus:ring-slate-950 cursor-pointer"
-                    />
-                    <span>{size}</span>
-                  </label>
-                ))}
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
               </div>
-            </div>
 
-            {/* Colour Swatches (Blueprint Panel 2) */}
-            <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-white/10">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Colour
-              </h3>
-              <div className="flex flex-wrap gap-2.5">
-                {AVAILABLE_COLORS.map(color => {
-                  const isSelected = selectedColors.includes(color.name);
-                  return (
-                    <button
-                      key={color.name}
-                      type="button"
-                      onClick={() => toggleColor(color.name)}
-                      className={`w-6 h-6 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
-                        isSelected 
-                          ? 'ring-2 ring-slate-950 dark:ring-white scale-110 shadow-md border-white' 
-                          : 'border-slate-300 dark:border-slate-700 hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    >
-                      {isSelected && (
-                        <Check className={`w-3 h-3 ${color.name === 'White' || color.name === 'Cream' ? 'text-black' : 'text-white'}`} />
-                      )}
-                    </button>
-                  );
-                })}
+              {/* SIZE Section (Checkboxes for S, M, L, XL, XXL matching screenshot) */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                  SIZE
+                </h3>
+                <div className="space-y-2.5">
+                  {AVAILABLE_SIZES.map(size => {
+                    const isChecked = selectedSizes.includes(size);
+                    return (
+                      <label 
+                        key={size}
+                        className="flex items-center gap-3 text-xs font-semibold text-slate-800 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white cursor-pointer select-none group"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleSize(size)}
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-slate-950 focus:ring-slate-950 cursor-pointer"
+                        />
+                        <span className="group-hover:translate-x-0.5 transition-transform">{size}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Price Dropdown (Blueprint Panel 2) */}
-            <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-white/10">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Price
-              </h3>
-              <div className="relative">
-                <select
-                  value={selectedPriceRange}
-                  onChange={(e) => setSelectedPriceRange(e.target.value)}
-                  className="w-full appearance-none px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-slate-950 dark:focus:border-white cursor-pointer pr-9"
-                >
-                  <option value="all">All Prices</option>
-                  <option value="under-200">Under GH₵200</option>
-                  <option value="200-500">GH₵200 - GH₵500</option>
-                  <option value="500-2000">GH₵500 - GH₵2,000</option>
-                  <option value="over-2000">Over GH₵2,000</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {/* Thin horizontal line separator */}
+              <div className="border-t border-slate-200 dark:border-white/10" />
+
+              {/* COLOUR Section (Swatches matching image attachment) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                    COLOUR
+                  </h3>
+                  {selectedColors.length > 0 && (
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      {selectedColors.join(', ')}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Horizontal row of circular swatches */}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {AVAILABLE_COLORS.map(color => {
+                    const isSelected = selectedColors.includes(color.name);
+                    const isLightColor = color.name === 'White' || color.name === 'Cream';
+                    return (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => toggleColor(color.name)}
+                        className={`w-7 h-7 rounded-full border transition-all cursor-pointer flex items-center justify-center relative active:scale-95 ${
+                          isSelected 
+                            ? 'ring-2 ring-slate-950 dark:ring-white scale-110 shadow-md border-white' 
+                            : 'border-slate-300 dark:border-slate-700 hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={`Filter all clothing in ${color.name}`}
+                        aria-label={`Filter by ${color.name}`}
+                      >
+                        {isSelected && (
+                          <Check className={`w-3.5 h-3.5 ${isLightColor ? 'text-black' : 'text-white'}`} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
+                  Select a colour or click any clothing swatch to view all styles in that shade.
+                </p>
               </div>
-            </div>
 
-          </aside>
+            </aside>
+          )}
 
-          {/* RIGHT COLUMN: CATALOG & PRODUCTS (Blueprint Panel 2: Product Grid) */}
-          <main className="lg:col-span-3 space-y-6">
+          {/* MAIN PRODUCT CATALOG */}
+          <main className={isClothing ? "lg:col-span-3 space-y-6" : "w-full space-y-6"}>
             
             {/* Catalog Top bar with count & Sort */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10 text-xs">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">
-                Showing {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-white/10 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-slate-500 dark:text-slate-400">
+                  Showing {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
+                </span>
+                {isClothing && selectedColors.length > 0 && (
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span>Showing all {selectedColors.join(', ')} clothing</span>
+                    <button 
+                      onClick={() => setSelectedColors([])} 
+                      className="hover:text-red-500 cursor-pointer ml-1 text-slate-400"
+                      title="Clear color filter"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
+                {isClothing && selectedSizes.length > 0 && (
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span>Size: {selectedSizes.join(', ')}</span>
+                    <button 
+                      onClick={() => setSelectedSizes([])} 
+                      className="hover:text-red-500 cursor-pointer ml-1 text-slate-400"
+                      title="Clear size filter"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
+              </div>
 
               {/* Sort by Dropdown */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">Sort by:</span>
                 <select
                   value={sortBy}
@@ -443,15 +539,57 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
               </div>
             </div>
 
-            {/* Product Grid */}
+            {/* Active Color Highlight Pill Bar (When viewing filtered clothing colors) */}
+            {isClothing && selectedColors.length > 0 && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-slate-600 dark:text-slate-400">
+                    Filtered by colour:
+                  </span>
+                  {selectedColors.map(c => {
+                    const def = AVAILABLE_COLORS.find(col => col.name === c);
+                    return (
+                      <span key={c} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-white shadow-2xs">
+                        {def && (
+                          <span className="w-2.5 h-2.5 rounded-full border border-black/20" style={{ backgroundColor: def.hex }} />
+                        )}
+                        <span>{c}</span>
+                        <button 
+                          onClick={() => toggleColor(c)} 
+                          className="hover:text-red-500 cursor-pointer text-slate-400 font-bold ml-1"
+                          title="Remove color filter"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setSelectedColors([])}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white underline cursor-pointer shrink-0"
+                >
+                  Show All Colours
+                </button>
+              </div>
+            )}
+
+            {/* Product Grid: 3-column when sidebar present in clothing, 4-column in other departments */}
             {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+              <div className={
+                isClothing 
+                  ? "grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6" 
+                  : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6"
+              }>
                 {filteredProducts.map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}
                     onAddToCart={onAddToCart}
                     onQuickView={onSelectProduct}
+                    onSelectColorFilter={isClothing ? handleSelectClothColor : undefined}
+                    activeColorFilter={selectedColors}
+                    isClothingDepartment={isClothing}
                   />
                 ))}
               </div>
@@ -478,25 +616,25 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
                             isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
                           }`}
                         >
-                          Open Admin Console to Add Products
+                          Open Admin Console
                         </button>
                       )}
                     </div>
                   ) : (
-                    // Customer / User View: Warm and inviting message
+                    // Customer Empty State: Clean & Warm
                     <div className="space-y-3">
-                      <h3 className={`text-lg sm:text-xl font-bold font-brand tracking-wide ${isDark ? 'text-white' : 'text-slate-950'}`}>
+                      <h3 className={`text-lg font-black font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
                         No Item Available. Come Again Later.
                       </h3>
-                      <p className={`text-xs sm:text-sm max-w-md mx-auto leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                        We are currently preparing and curating our newest collection for you. Please check back with us soon, or reach out to our concierge desk for any inquiries.
+                      <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        We are currently preparing and curating our newest collection for you. Check back shortly or reach out to our concierge hotline for immediate requests.
                       </p>
                       {onContactSupport && (
                         <div className="pt-2">
                           <button
                             onClick={onContactSupport}
-                            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                              isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-slate-950 hover:bg-black text-white'
+                            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                              isDark ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20' : 'bg-slate-200 hover:bg-slate-300 text-slate-900 border border-slate-300'
                             }`}
                           >
                             Contact Concierge & Support (059 883 0932)
@@ -509,10 +647,14 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
                   // Filter Empty View: When products exist in store but filter returned 0
                   <div className="space-y-3">
                     <h3 className={`text-base font-bold font-brand uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                      No items match your filter
+                      {isClothing && selectedColors.length > 0 
+                        ? `No clothing found in ${selectedColors.join(', ')}` 
+                        : "No items match your filter"}
                     </h3>
                     <p className={`text-xs max-w-sm mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Try selecting a different category or clearing active filters.
+                      {isClothing && selectedColors.length > 0
+                        ? "Try selecting another color or reset to view all available clothing."
+                        : "Try selecting a different category or clearing active filters."}
                     </p>
                     <button
                       onClick={resetFilters}
@@ -520,7 +662,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
                         isDark ? 'bg-white hover:bg-slate-100 text-slate-950' : 'bg-black hover:bg-slate-900 text-white'
                       }`}
                     >
-                      Clear Filters / View All
+                      {isClothing ? "View All Clothing" : "Clear Filters / View All"}
                     </button>
                   </div>
                 )}
@@ -531,16 +673,18 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
         </div>
       </div>
 
-      {/* MOBILE FILTERS MODAL (< 1024px) */}
-      {mobileFiltersOpen && (
+      {/* MOBILE FILTERS MODAL (ONLY FOR CLOTHING DEPARTMENT) */}
+      {isClothing && mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-xs bg-white h-full ml-auto p-6 flex flex-col justify-between overflow-y-auto">
+          <div className={`w-full max-w-xs h-full ml-auto p-6 flex flex-col justify-between overflow-y-auto ${
+            isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-950'
+          }`}>
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                <h3 className="text-sm font-black uppercase text-slate-950">FILTERS</h3>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+                <h3 className="text-sm font-black uppercase text-slate-950 dark:text-white font-brand">FILTERS</h3>
                 <button 
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="p-1 rounded-lg text-slate-500 hover:text-black"
+                  className="p-1 rounded-lg text-slate-500 hover:text-black dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -548,17 +692,17 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
 
               {/* Size */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase text-slate-700">Size</h4>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-200">SIZE</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {AVAILABLE_SIZES.map(size => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => toggleSize(size)}
-                      className={`py-2 text-xs font-bold rounded-lg border transition-all ${
+                      className={`py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                         selectedSizes.includes(size)
-                          ? 'bg-slate-950 text-white border-slate-950'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
+                          ? (isDark ? 'bg-white text-slate-950 border-white' : 'bg-slate-950 text-white border-slate-950')
+                          : (isDark ? 'bg-slate-900 text-slate-300 border-slate-800' : 'bg-slate-50 text-slate-700 border-slate-200')
                       }`}
                     >
                       {size}
@@ -567,54 +711,49 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
                 </div>
               </div>
 
-              {/* Colour */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <h4 className="text-xs font-bold uppercase text-slate-700">Colour</h4>
-                <div className="flex flex-wrap gap-2">
-                  {AVAILABLE_COLORS.map(color => (
-                    <button
-                      key={color.name}
-                      type="button"
-                      onClick={() => toggleColor(color.name)}
-                      className={`w-7 h-7 rounded-full border transition-all ${
-                        selectedColors.includes(color.name)
-                          ? 'ring-2 ring-slate-950 scale-110'
-                          : 'border-slate-300'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    />
-                  ))}
-                </div>
-              </div>
+              {/* Thin separator */}
+              <div className="border-t border-slate-200 dark:border-white/10" />
 
-              {/* Price */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <h4 className="text-xs font-bold uppercase text-slate-700">Price</h4>
-                <select
-                  value={selectedPriceRange}
-                  onChange={(e) => setSelectedPriceRange(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold"
-                >
-                  <option value="all">All Prices</option>
-                  <option value="under-200">Under GH₵200</option>
-                  <option value="200-500">GH₵200 - GH₵500</option>
-                  <option value="500-2000">GH₵500 - GH₵2,000</option>
-                  <option value="over-2000">Over GH₵2,000</option>
-                </select>
+              {/* Colour */}
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-200">COLOUR</h4>
+                <div className="flex flex-wrap gap-2.5">
+                  {AVAILABLE_COLORS.map(color => {
+                    const isSelected = selectedColors.includes(color.name);
+                    const isLight = color.name === 'White' || color.name === 'Cream';
+                    return (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => toggleColor(color.name)}
+                        className={`w-8 h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+                          isSelected
+                            ? 'ring-2 ring-slate-950 dark:ring-white scale-110 border-white'
+                            : 'border-slate-300 dark:border-slate-700'
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      >
+                        {isSelected && (
+                          <Check className={`w-3.5 h-3.5 ${isLight ? 'text-black' : 'text-white'}`} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-200 flex gap-2">
+            <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex gap-2">
               <button
                 onClick={resetFilters}
-                className="w-1/2 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs"
+                className="w-1/2 py-3 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
               >
                 Reset
               </button>
               <button
                 onClick={() => setMobileFiltersOpen(false)}
-                className="w-1/2 py-3 bg-slate-950 text-white rounded-xl font-bold text-xs"
+                className="w-1/2 py-3 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-xl font-bold text-xs cursor-pointer"
               >
                 Apply
               </button>
